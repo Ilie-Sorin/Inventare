@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stare_inventar %}
+{% block titlu %}Listări — inventar {{ inventar.id }}{% endblock %}
+{% block continut %}
+<h1 class="h4 mb-1">Listări — inventarul nr. {{ inventar.id }} la {{ inventar.data | data_ro }} {{ stare_inventar(inventar.stare) }}</h1>
+<p class="small mb-3"><a href="{{ url_for('inventare.detalii', inventar_id=inventar.id) }}">înapoi la inventar</a></p>
+
+{% if inventar.stare == "NEACTUALIZAT" %}
+<div class="alert alert-warning">Inventarul trebuie regenerat înainte de tipărire sau export.</div>
+{% endif %}
+
+<form method="get" class="card card-body mb-3">
+  <h2 class="h6">Filtru <small class="text-muted fw-normal">— gol înseamnă „toate”; gestiunile alese și cele din grupuri se adună</small></h2>
+  {% if tip %}<input type="hidden" name="centralizator" value="{{ tip }}">{% endif %}
+  <div class="row g-2">
+    {% for cheie, eticheta, latime in [("locatii", "Locații", 2), ("activitati", "Activități", 2), ("persoane", "Gestiuni", 3),
+                                       ("grupuri", "Grupuri", 2), ("categorii", "Categorii", 1), ("conturi", "Conturi", 2)] %}
+    <div class="col-md-{{ latime }}">
+      <label class="form-label small mb-0" for="f-{{ cheie }}">{{ eticheta }}</label>
+      <select multiple class="form-select form-select-sm" id="f-{{ cheie }}" name="{{ cheie }}" size="6">
+        {% for valoare, text in optiuni[cheie] %}
+        <option value="{{ valoare }}" {{ "selected" if valoare | string in selectate[cheie] }}>{{ text }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="mt-2">
+    <button class="btn btn-secondary btn-sm">Aplică filtrul</button>
+    <a class="btn btn-link btn-sm" href="{{ url_for('inventare.listari', inventar_id=inventar.id) }}">Fără filtru</a>
+    <span class="small text-muted ms-2">Filtru curent: {{ descriere_filtru }}</span>
+  </div>
+</form>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card card-body h-100">
+      <h2 class="h6">Liste și declarații (PDF)</h2>
+      {% for c, nume in [("MF", "Mijloace fixe"), ("OI", "Obiecte de inventar")] %}
+      <div class="mb-2">
+        <div class="small fw-bold">{{ nume }}</div>
+        <a target="_blank" href="{{ url_for('inventare.pdf', inventar_id=inventar.id, tip='liste', categorie=c, **argumente) }}">Liste</a> ·
+        <a target="_blank" href="{{ url_for('inventare.pdf', inventar_id=inventar.id, tip='inceput', categorie=c, **argumente) }}">Declarații de început</a> ·
+        <a target="_blank" href="{{ url_for('inventare.pdf', inventar_id=inventar.id, tip='sfarsit', categorie=c, **argumente) }}">Declarații de sfârșit</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card card-body h-100">
+      <h2 class="h6">Centralizatoare</h2>
+      <table class="table table-sm mb-0">
+        {% for cod, (titlu, _) in tipuri.items() %}
+        <tr>
+          <td>{{ titlu | capitalize }}</td>
+          <td class="text-end text-nowrap">
+            <a href="{{ url_for('inventare.listari', inventar_id=inventar.id, centralizator=cod, **argumente) }}">pe ecran</a> ·
+            <a target="_blank" href="{{ url_for('inventare.centralizator_fisier', inventar_id=inventar.id, tip=cod, format_='pdf', **argumente) }}">PDF</a> ·
+            <a href="{{ url_for('inventare.centralizator_fisier', inventar_id=inventar.id, tip=cod, format_='xlsx', **argumente) }}">Excel</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-3">
+    <div class="card card-body h-100">
+      <h2 class="h6">Export (un rând pe bun)</h2>
+      <a class="btn btn-outline-primary btn-sm mb-2" href="{{ url_for('inventare.export', inventar_id=inventar.id, format_='xlsx', **argumente) }}">Excel (.xlsx)</a>
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('inventare.export', inventar_id=inventar.id, format_='csv', **argumente) }}">CSV (separator „;”)</a>
+      {% if poate('OPERATOR') %}
+      <h2 class="h6 mt-3">E-mail</h2>
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('email.previzualizare', inventar_id=inventar.id, **argumente) }}">Trimite listele titularilor…</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if randuri is not none %}
+<h2 class="h5 mt-4">Centralizator {{ tipuri[tip][0] }}</h2>
+<table class="table table-sm w-auto">
+  <thead><tr><th></th><th class="text-end">Număr bunuri</th><th class="text-end">Valoare</th></tr></thead>
+  <tbody>
+  {% for r in randuri %}
+    <tr class="{{ 'fw-bold' if r.tip != 'detaliu' }} {{ 'table-light' if r.tip == 'total' }}">
+      <td style="padding-left: {{ 0.5 + r.nivel * 1.5 }}rem">{{ r.eticheta }}</td>
+      <td class="text-end">{{ r.numar if r.numar is not none else "" }}</td>
+      <td class="text-end">{{ r.valoare | suma if r.valoare is not none else "" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

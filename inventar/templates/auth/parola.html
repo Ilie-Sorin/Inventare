@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp %}
+{% block titlu %}Schimbare parolă{% endblock %}
+{% block continut %}
+<h1 class="h4">Schimbare parolă</h1>
+<form method="post" class="col-md-6 col-lg-4" novalidate>
+  {{ form.hidden_tag() }}
+  {{ camp(form.parola_veche, autocomplete="current-password") }}
+  {{ camp(form.parola_noua, autocomplete="new-password", ajutor="Cel puțin 8 caractere.") }}
+  {{ camp(form.confirmare, autocomplete="new-password") }}
+  {{ form.trimite(class="btn btn-primary") }}
+</form>
+{% endblock %}

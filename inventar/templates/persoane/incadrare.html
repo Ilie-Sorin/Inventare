@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp, erori_ascunse %}
+{% block titlu %}Încadrare — {{ persoana.nume }}{% endblock %}
+{% block continut %}
+<h1 class="h4">{{ "Corectare încadrare" if incadrare else "Schimbare încadrare" }} — {{ persoana.nume }}</h1>
+<p class="text-muted small col-lg-8">
+  {% if incadrare %}
+  Folosiți corectarea doar pentru o greșeală de introducere. O mutare reală se face cu „Schimbă încadrarea”, ca să rămână istoricul.
+  {% else %}
+  Noua locație și activitate se aplică de la data aleasă; inventarele de dinainte rămân neschimbate.
+  Pentru fiecare bun alegeți dacă urmează persoana sau se predă cuiva din vechea locație
+  (predările devin documente de transfer cu aceeași dată).
+  {% endif %}
+</p>
+<form method="post" novalidate>
+  {{ form.hidden_tag() }}
+  {{ erori_ascunse(form, ["locatie_id", "activitate_id", "valabil_de_la", "motiv"]) }}
+  <div class="row g-3">
+    <div class="col-md-3">{{ camp(form.locatie_id) }}</div>
+    <div class="col-md-3">{{ camp(form.activitate_id) }}</div>
+    <div class="col-md-2">{{ camp(form.valabil_de_la) }}</div>
+    <div class="col-md-4">{{ camp(form.motiv) }}</div>
+  </div>
+
+  {% if incadrare %}
+  {{ form.trimite(class="btn btn-primary") }}
+  {% else %}
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="h6 mb-0">Bunurile persoanei la {{ form.valabil_de_la.data | data_ro }}: {{ bunuri | length }}</h2>
+    <button class="btn btn-sm btn-outline-secondary" name="actiune" value="incarca">Reîncarcă bunurile pentru data aleasă</button>
+  </div>
+  {% if bunuri %}
+  <div class="mb-2 d-flex gap-2 align-items-center small">
+    <label for="toate">Pentru toate bunurile:</label>
+    <select id="toate" class="form-select form-select-sm w-auto"
+            onchange="document.querySelectorAll('select.predare').forEach(s => s.value = this.value)">
+      <option value="">urmează persoana</option>
+      {% for d in destinatari %}<option value="{{ d.id }}">se predă lui {{ d.nume }}</option>{% endfor %}
+    </select>
+  </div>
+  <table class="table table-sm align-middle">
+    <thead><tr><th>Nr. inventar</th><th>Denumire</th><th>Cat.</th><th class="text-end">Valoare</th><th>Ce se întâmplă</th></tr></thead>
+    <tbody>
+    {% for b in bunuri %}
+      <tr>
+        <td>{{ b.nr_inventar }}</td><td>{{ b.denumire }}</td><td>{{ b.categorie }}</td>
+        <td class="text-end">{{ b.pret | suma }}</td>
+        <td>
+          <select name="predare_{{ b.id }}" class="form-select form-select-sm predare" aria-label="Destinație {{ b.nr_inventar }}">
+            <option value="">urmează persoana</option>
+            {% for d in destinatari %}
+            <option value="{{ d.id }}" {{ "selected" if predari.get(b.id) == d.id }}>se predă lui {{ d.nume }}</option>
+            {% endfor %}
+          </select>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted small">Persoana nu are bunuri la această dată.</p>
+  {% endif %}
+  <button class="btn btn-primary" name="actiune" value="executa">Schimbă încadrarea</button>
+  {% endif %}
+  <a class="btn btn-link" href="{{ url_for('persoane.fisa', persoana_id=persoana.id) }}">Renunță</a>
+</form>
+{% endblock %}

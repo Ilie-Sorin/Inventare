@@ -1,0 +1,59 @@
+{% macro camp(field, ajutor=None) %}
+<div class="mb-3">
+  {% if field.type == "BooleanField" %}
+  <div class="form-check">
+    {{ field(class="form-check-input") }} {{ field.label(class="form-check-label") }}
+  </div>
+  {% else %}
+  {{ field.label(class="form-label") }}
+  {% set clasa = "form-select" if field.type in ("SelectField", "SelectMultipleField") else "form-control" %}
+  {{ field(class=clasa + (" is-invalid" if field.errors else ""), **kwargs) }}
+  {% for eroare in field.errors %}<div class="invalid-feedback">{{ eroare }}</div>{% endfor %}
+  {% endif %}
+  {% if ajutor %}<div class="form-text">{{ ajutor }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro buton_post(url, text, clasa="btn-outline-secondary", confirmare=None) %}
+<form method="post" action="{{ url }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="btn btn-sm {{ clasa }}"
+          {% if confirmare %}onclick="return confirm('{{ confirmare }}')"{% endif %}>{{ text }}</button>
+</form>
+{% endmacro %}
+
+{% macro stare(activ) %}
+{% if activ %}<span class="badge text-bg-success">activ</span>{% else %}<span class="badge text-bg-secondary">inactiv</span>{% endif %}
+{% endmacro %}
+
+{% macro paginare(pagina, pagini, endpoint, args) %}
+{% if pagini > 1 %}
+<nav aria-label="Paginare"><ul class="pagination pagination-sm">
+  {% for p in range(1, pagini + 1) %}
+    {% if p == 1 or p == pagini or (p - pagina) | abs <= 3 %}
+    <li class="page-item {{ 'active' if p == pagina }}">
+      <a class="page-link" href="{{ url_for(endpoint, **dict(args.to_dict(), pagina=p)) }}">{{ p }}</a></li>
+    {% elif (p - pagina) | abs == 4 %}
+    <li class="page-item disabled"><span class="page-link">…</span></li>
+    {% endif %}
+  {% endfor %}
+</ul></nav>
+{% endif %}
+{% endmacro %}
+
+{% macro stare_document(stare) %}
+{% set culori = {"CIORNA": "warning", "VALIDAT": "success", "ANULAT": "secondary"} %}
+<span class="badge text-bg-{{ culori[stare] }}">{{ {"CIORNA": "ciornă", "VALIDAT": "validat", "ANULAT": "anulat"}[stare] }}</span>
+{% endmacro %}
+
+{% macro erori_ascunse(form, afisate) %}
+{# Erorile câmpurilor care nu apar în pagină (ex. CSRF) altfel s-ar pierde fără niciun mesaj. #}
+{% set ascunse = [] %}
+{% for nume, erori in form.errors.items() if nume not in afisate %}{% set _ = ascunse.extend(erori) %}{% endfor %}
+{% if ascunse %}<div class="alert alert-danger">{{ ascunse | join(" ") }}</div>{% endif %}
+{% endmacro %}
+
+{% macro stare_inventar(stare) %}
+{% set culori = {"GENERAT": "success", "NEACTUALIZAT": "warning", "BLOCAT": "dark"} %}
+<span class="badge text-bg-{{ culori[stare] }}">{{ {"GENERAT": "generat", "NEACTUALIZAT": "neactualizat", "BLOCAT": "blocat"}[stare] }}</span>
+{% endmacro %}

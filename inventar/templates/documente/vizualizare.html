@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_macros.html" import buton_post, stare_document %}
+{% block titlu %}{{ DENUMIRI_TIP[document.tip] }} {{ document.numar }}{% endblock %}
+{% block continut %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h4 mb-1">{{ DENUMIRI_TIP[document.tip] }} nr. {{ document.serie or "" }} {{ document.numar }}
+      din {{ document.data | data_ro }} {{ stare_document(document.stare) }}</h1>
+    <div class="small text-muted">
+      {% if document.motiv_iesire %}Motiv: {{ MOTIVE_IESIRE[document.motiv_iesire] }} · {% endif %}
+      {{ document.explicatie or "" }}
+    </div>
+    {% if document.stare == "ANULAT" %}
+    <div class="small text-danger">Anulat la {{ document.anulat_la.strftime("%d.%m.%Y %H:%M") }}: {{ document.motiv_anulare }}</div>
+    {% endif %}
+  </div>
+  {% if poate('OPERATOR') %}
+  <div class="text-nowrap">
+    {% if document.stare == "CIORNA" %}
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('documente.formular', document_id=document.id) }}">Modifică</a>
+    {{ buton_post(url_for('documente.validare', document_id=document.id), 'Validează', 'btn-primary') }}
+    {% endif %}
+    {% if document.stare != "ANULAT" and document.tip != "INITIAL" %}
+    <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#anulare">Anulează</button>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<form method="post" action="{{ url_for('documente.anulare', document_id=document.id) }}" id="anulare"
+      class="collapse card card-body mb-3 col-lg-6">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="form-label" for="motiv">Motivul anulării (obligatoriu)</label>
+  <textarea class="form-control mb-2" id="motiv" name="motiv" rows="2" required></textarea>
+  {% if document.tip == "INCADRARE" %}
+  <p class="small text-muted">Se anulează și încadrarea creată de acest document. Transferurile făcute la schimbarea
+    încadrării sunt documente separate și se anulează fiecare în parte.</p>
+  {% endif %}
+  <div><button class="btn btn-danger btn-sm">Confirmă anularea</button></div>
+</form>
+
+{% if document.linii %}
+<table class="table table-sm align-middle">
+  <thead><tr><th>Nr. inventar</th><th>Denumire</th><th>Cat.</th><th>Cont</th><th class="text-end">Valoare</th>
+    <th>Predă</th><th>Primește</th></tr></thead>
+  <tbody>
+  {% for l in document.linii %}
+    <tr>
+      <td><a href="{{ url_for('bunuri.fisa', bun_id=l.bun_id) }}">{{ l.bun.nr_inventar }}</a></td>
+      <td>{{ l.bun.denumire }}</td>
+      <td>{{ l.bun.categorie }}</td>
+      <td>{{ l.bun.cont.simbol }}</td>
+      <td class="text-end">{{ l.bun.pret | suma }}</td>
+      <td>{% if l.persoana_de_la %}<a href="{{ url_for('persoane.fisa', persoana_id=l.persoana_de_la_id) }}">{{ l.persoana_de_la.nume }}</a>{% endif %}</td>
+      <td>{% if l.persoana_la %}<a href="{{ url_for('persoane.fisa', persoana_id=l.persoana_la_id) }}">{{ l.persoana_la.nume }}</a>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr><th colspan="4">Total ({{ document.linii | length }} bunuri)</th><th class="text-end">{{ total | suma }}</th><th colspan="2"></th></tr></tfoot>
+</table>
+{% else %}
+<p class="text-muted">Documentul nu conține bunuri.</p>
+{% endif %}
+{% endblock %}

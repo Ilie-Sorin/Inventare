@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block titlu %}E-mail — inventar {{ p.inventar.id }}{% endblock %}
+{% block continut %}
+<h1 class="h4 mb-1">Trimitere pe e-mail — inventarul la {{ p.inventar.data | data_ro }}</h1>
+<p class="small"><a href="{{ url_for('inventare.listari', inventar_id=p.inventar.id, **argumente) }}">înapoi la listări</a></p>
+
+{% if not smtp_configurat %}
+<div class="alert alert-danger">Setările SMTP nu sunt completate. Administratorul le introduce în Administrare → E-mail (SMTP).</div>
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <h2 class="h6">Destinatari ({{ p.destinatari | length }}) — un mesaj pe titular, cu listele tuturor gestiunilor lui</h2>
+    <table class="table table-sm align-middle">
+      <thead><tr><th>Titular</th><th>Adresă</th><th>Atașamente</th></tr></thead>
+      <tbody>
+      {% for d in p.destinatari %}
+        <tr>
+          <td>{{ d.nume }}{% if d.gestiuni | length > 1 %}<div class="small text-muted">gestiuni: {{ d.gestiuni | join(", ") }}</div>{% endif %}</td>
+          <td>{{ d.adresa }}</td>
+          <td class="small">{% for a in d.atasamente %}{{ a.fisier }}<br>{% endfor %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3" class="text-muted">Niciun titular din selecție nu are adresă de e-mail.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if p.fara_adresa %}
+    <h2 class="h6 text-danger">Fără adresă de e-mail ({{ p.fara_adresa | length }}) — nu primesc nimic</h2>
+    <ul class="small">{% for d in p.fara_adresa %}<li><a href="{{ url_for('persoane.fisa', persoana_id=d.titular_id) }}">{{ d.nume }}</a></li>{% endfor %}</ul>
+    {% endif %}
+  </div>
+  <div class="col-lg-5">
+    <h2 class="h6">Mesajul{% if p.destinatari %} (exemplu pentru {{ p.destinatari[0].nume }}){% endif %}</h2>
+    <div class="card card-body small">
+      <div><strong>Subiect:</strong> {{ subiect }}</div>
+      <hr class="my-2">
+      <div style="white-space: pre-wrap">{{ corp }}</div>
+    </div>
+    <p class="small text-muted mt-1">Textul se modifică din Administrare → Șabloane de text.</p>
+  </div>
+</div>
+
+{% if p.destinatari and smtp_configurat %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn btn-primary" onclick="return confirm('Trimiteți {{ p.destinatari | length }} mesaje?')">
+    Confirmă și trimite {{ p.destinatari | length }} mesaje</button>
+</form>
+{% endif %}
+{% endblock %}

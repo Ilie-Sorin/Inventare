@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp %}
+{% block titlu %}Sincronizare anuală{% endblock %}
+{% block continut %}
+<h1 class="h4">Sincronizare cu exportul contabil</h1>
+<p class="text-muted small col-lg-8">Se încarcă un export MF_BAZA nou. Aplicația îl compară cu ce știe și propune
+  acțiuni: bunuri noi, ieșiri pentru casări, actualizarea datelor contabile. <strong>Nimic nu se aplică fără
+  confirmare.</strong></p>
+{% if poate('OPERATOR') %}
+<form method="post" action="{{ url_for('sincronizari.incarcare') }}" enctype="multipart/form-data"
+      class="col-md-8 col-lg-6 mb-4" novalidate>
+  {{ form.hidden_tag() }}
+  {{ camp(form.mf_baza, multiple=True, accept=".xls") }}
+  {{ form.trimite(class="btn btn-primary") }}
+</form>
+{% endif %}
+
+<table class="table table-sm align-middle">
+  <thead><tr><th>Nr.</th><th>Încărcată la</th><th>De</th><th>Diferențe</th><th>Stare</th></tr></thead>
+  <tbody>
+  {% for s in sincronizari %}
+    <tr>
+      <td><a href="{{ url_for('sincronizari.detalii', sincronizare_id=s.id) }}">{{ s.id }}</a></td>
+      <td>{{ s.incarcat_la.strftime("%d.%m.%Y %H:%M") }}</td>
+      <td>{{ s.utilizator.username if s.utilizator else "" }}</td>
+      <td class="small">{% for tip, n in rezumate[s.id].items() %}{{ tip }}: {{ n }}{% if not loop.last %}, {% endif %}{% else %}niciuna{% endfor %}</td>
+      <td>{% set culori = {"INCARCATA": "warning", "APLICATA": "success", "ABANDONATA": "secondary"} %}
+        <span class="badge text-bg-{{ culori[s.stare] }}">{{ {"INCARCATA": "de revizuit", "APLICATA": "aplicată", "ABANDONATA": "abandonată"}[s.stare] }}</span></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="text-muted">Nicio sincronizare.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

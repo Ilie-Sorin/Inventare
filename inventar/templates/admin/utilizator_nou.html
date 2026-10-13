@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp %}
+{% block titlu %}Utilizator nou{% endblock %}
+{% block continut %}
+<h1 class="h4">Utilizator nou</h1>
+<form method="post" class="col-md-6 col-lg-4" novalidate>
+  {{ form.hidden_tag() }}
+  {{ camp(form.username, autocomplete="off") }}
+  {{ camp(form.rol) }}
+  {{ camp(form.parola, autocomplete="new-password", ajutor="Cel puțin 8 caractere.") }}
+  {{ camp(form.confirmare, autocomplete="new-password") }}
+  {{ form.trimite(class="btn btn-primary") }}
+  <a class="btn btn-link" href="{{ url_for('admin.lista_utilizatori') }}">Renunță</a>
+</form>
+{% endblock %}

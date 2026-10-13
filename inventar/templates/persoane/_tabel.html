@@ -1,0 +1,19 @@
+{% from "_macros.html" import stare %}
+<table class="table table-sm table-hover align-middle">
+  <thead><tr><th>Gestiune</th><th>Titular</th><th>Locație (azi)</th><th>Activitate (azi)</th><th>E-mail</th><th>Stare</th></tr></thead>
+  <tbody>
+  {% for p, locatie, activitate in randuri %}
+    <tr class="{{ '' if p.activ else 'text-muted' }}">
+      <td><a href="{{ url_for('persoane.fisa', persoana_id=p.id) }}">{{ p.nume }}</a></td>
+      <td>{{ p.titular.nume if p.titular else "" }}</td>
+      <td>{{ locatie or "—" }}</td>
+      <td>{{ activitate or "—" }}</td>
+      <td>{{ p.email or "" }}</td>
+      <td>{{ stare(p.activ) }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-muted">Nicio persoană.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<div class="small text-muted">{{ randuri | length }} înregistrări</div>

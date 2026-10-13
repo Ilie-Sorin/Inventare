@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stare %}
+{% block titlu %}Utilizatori{% endblock %}
+{% block continut %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Utilizatori</h1>
+  <a class="btn btn-primary btn-sm" href="{{ url_for('admin.utilizator_nou') }}">Adaugă utilizator</a>
+</div>
+<table class="table table-sm align-middle">
+  <thead><tr><th>Utilizator</th><th>Rol</th><th>Persoana asociată</th><th>Stare</th><th></th></tr></thead>
+  <tbody>
+  {% for u in utilizatori %}
+    <tr class="{{ '' if u.activ else 'text-muted' }}">
+      <td>{{ u.username }}</td>
+      <td>{{ u.rol }}</td>
+      <td>{{ u.persoana.nume if u.persoana else "" }}</td>
+      <td>{{ stare(u.activ) }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.utilizator', utilizator_id=u.id) }}">Modifică</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="small text-muted">ADMIN — tot; OPERATOR — date, documente, inventare, tipărire, e-mail; CONSULTARE — doar citire și listare.</p>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_macros.html" import paginare %}
+{% block titlu %}Bunuri{% endblock %}
+{% block continut %}
+<h1 class="h4 mb-3">Situația bunurilor la {{ data | data_ro }}</h1>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-2"><input type="date" name="data" value="{{ data.isoformat() }}" class="form-control" aria-label="Data"></div>
+  <div class="col-md-2">
+    <select name="stare" class="form-select" aria-label="Stare">
+      {% for cod, den in stari.items() %}<option value="{{ cod }}" {{ "selected" if stare == cod }}>{{ den }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="locatie_id" class="form-select" aria-label="Locație">
+      <option value="">Toate locațiile</option>
+      {% for id, den in locatii %}<option value="{{ id }}" {{ "selected" if filtre.locatie_id == id | string }}>{{ den }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="activitate_id" class="form-select" aria-label="Activitate">
+      <option value="">Toate activitățile</option>
+      {% for id, den in activitati %}<option value="{{ id }}" {{ "selected" if filtre.activitate_id == id | string }}>{{ den }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="persoana_id" class="form-select" aria-label="Gestiune">
+      <option value="">Toate gestiunile</option>
+      {% for id, nume in persoane %}<option value="{{ id }}" {{ "selected" if filtre.persoana_id == id | string }}>{{ nume }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-1">
+    <select name="categorie" class="form-select" aria-label="Categorie">
+      <option value="">MF+OI</option>
+      {% for c in ["MF", "OI"] %}<option {{ "selected" if filtre.categorie == c }}>{{ c }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-1">
+    <select name="sintetic" class="form-select" aria-label="Cont sintetic">
+      <option value="">Cont</option>
+      {% for s in sintetice %}<option {{ "selected" if filtre.sintetic == s }}>{{ s }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4"><input type="search" name="q" value="{{ filtre.q }}" class="form-control"
+                               placeholder="Nr. inventar sau denumire" aria-label="Caută"></div>
+  <div class="col-md-1"><button class="btn btn-secondary w-100">Arată</button></div>
+</form>
+
+<p class="small">{{ numar }} bunuri, valoare totală <strong>{{ valoare | suma }}</strong></p>
+<table class="table table-sm table-hover align-middle">
+  <thead><tr><th>Nr. inventar</th><th>Denumire</th><th>Cat.</th><th>Cont</th><th class="text-end">Valoare</th>
+    <th>Gestiune</th><th>Locație</th><th>Activitate</th></tr></thead>
+  <tbody>
+  {% for b, p, locatie, activitate in randuri %}
+    <tr>
+      <td><a href="{{ url_for('bunuri.fisa', bun_id=b.id) }}">{{ b.nr_inventar }}</a></td>
+      <td>{{ b.denumire }}</td>
+      <td>{{ b.categorie }}</td>
+      <td>{{ b.cont.simbol }}</td>
+      <td class="text-end">{{ b.pret | suma }}</td>
+      <td>{% if p %}<a href="{{ url_for('persoane.fisa', persoana_id=p.id) }}">{{ p.nume }}</a>{% endif %}</td>
+      <td>{{ locatie or "" }}</td>
+      <td>{{ activitate or "" }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8" class="text-muted">Niciun bun.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ paginare(pagina, pagini, 'bunuri.situatie', filtre) }}
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import buton_post %}
+{% block titlu %}Grupuri de persoane{% endblock %}
+{% block continut %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Grupuri de persoane</h1>
+  {% if poate('OPERATOR') %}
+  <a class="btn btn-primary btn-sm" href="{{ url_for('nomenclatoare.editare_grup') }}">Adaugă grup</a>
+  {% endif %}
+</div>
+<p class="text-muted small">Grupurile servesc doar la filtrarea listărilor (ex. tipărirea listelor pentru un grup de gestiuni).</p>
+<table class="table table-sm align-middle">
+  <thead><tr><th>Grup</th><th>Persoane</th><th></th></tr></thead>
+  <tbody>
+  {% for g in grupuri %}
+    <tr>
+      <td>{{ g.denumire }}</td>
+      <td class="small">{{ g.persoane | map(attribute="nume") | join(", ") }}</td>
+      <td class="text-end text-nowrap">
+        {% if poate('OPERATOR') %}
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('nomenclatoare.editare_grup', grup_id=g.id) }}">Modifică</a>
+        {{ buton_post(url_for('nomenclatoare.sterge_grup', grup_id=g.id), 'Șterge', 'btn-outline-danger',
+                      confirmare='Ștergeți grupul? Persoanele nu sunt afectate.') }}
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="3" class="text-muted">Niciun grup.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

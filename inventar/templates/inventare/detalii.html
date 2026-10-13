@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% from "_macros.html" import buton_post, stare_inventar %}
+{% block titlu %}Inventar {{ inventar.id }}{% endblock %}
+{% block continut %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h4 mb-1">Inventar nr. {{ inventar.id }} la {{ inventar.data | data_ro }} {{ stare_inventar(inventar.stare) }}</h1>
+    <div class="small text-muted">Perimetru: {{ inventar.perimetru_json | perimetru }} ·
+      generat la {{ inventar.generat_la.strftime("%d.%m.%Y %H:%M") }}{% if inventar.utilizator %} de {{ inventar.utilizator.username }}{% endif %}</div>
+    {% if inventar.motiv_deblocare %}<div class="small">Ultima deblocare: {{ inventar.motiv_deblocare }}</div>{% endif %}
+  </div>
+  <div class="text-nowrap">
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('inventare.listari', inventar_id=inventar.id) }}">Listări</a>
+    {% if poate('OPERATOR') and inventar.stare != "BLOCAT" %}
+    {{ buton_post(url_for('inventare.regenerare', inventar_id=inventar.id), 'Regenerează', 'btn-primary' if inventar.stare == 'NEACTUALIZAT' else 'btn-outline-primary') }}
+    {% endif %}
+    {% if poate('OPERATOR') and inventar.stare == "GENERAT" %}
+    {{ buton_post(url_for('inventare.blocare', inventar_id=inventar.id), 'Blochează (semnat)', 'btn-outline-dark',
+                  confirmare='După blocare inventarul nu se mai modifică; doar administratorul îl poate debloca. Continuați?') }}
+    {% endif %}
+    {% if poate('OPERATOR') and inventar.stare != "BLOCAT" %}
+    {{ buton_post(url_for('inventare.stergere', inventar_id=inventar.id), 'Șterge', 'btn-outline-danger',
+                  confirmare='Ștergeți inventarul generat?') }}
+    {% endif %}
+    {% if poate('ADMIN') and inventar.stare == "BLOCAT" %}
+    <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#deblocare">Deblochează</button>
+    {% endif %}
+  </div>
+</div>
+
+{% if inventar.stare == "NEACTUALIZAT" %}
+<div class="alert alert-warning">Situația la {{ inventar.data | data_ro }} s-a schimbat după generare
+  (document validat sau anulat, schimbare de încadrare). Regenerați înainte de tipărire.</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('inventare.deblocare', inventar_id=inventar.id) }}" id="deblocare"
+      class="collapse card card-body mb-3 col-lg-6">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="form-label" for="motiv">Motivul deblocării (obligatoriu)</label>
+  <textarea class="form-control mb-2" id="motiv" name="motiv" rows="2" required></textarea>
+  <div><button class="btn btn-danger btn-sm">Confirmă deblocarea</button></div>
+</form>
+
+{% if inventar.stare != "NEACTUALIZAT" and categorii %}
+<div class="card card-body mb-3">
+  <h2 class="h6">Tipărire</h2>
+  <div class="d-flex flex-wrap gap-2">
+    {% for c in categorii %}
+    <div class="btn-group btn-group-sm" role="group" aria-label="Tipărire {{ c }}">
+      <a class="btn btn-outline-primary" target="_blank" href="{{ url_for('inventare.pdf', inventar_id=inventar.id, tip='liste', categorie=c) }}">Liste {{ c }}</a>
+      <a class="btn btn-outline-primary" target="_blank" href="{{ url_for('inventare.pdf', inventar_id=inventar.id, tip='inceput', categorie=c) }}">Declarații de început {{ c }}</a>
+      <a class="btn btn-outline-primary" target="_blank" href="{{ url_for('inventare.pdf', inventar_id=inventar.id, tip='sfarsit', categorie=c) }}">Declarații de sfârșit {{ c }}</a>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="small text-muted mt-2">Tirajul complet al categoriei, în ordinea: locație, activitate, gestiune, cont.
+    Pentru o singură gestiune, folosiți legăturile „PDF” din tabelul listelor; pentru filtre, centralizatoare și
+    export, <a href="{{ url_for('inventare.listari', inventar_id=inventar.id) }}">Listări</a>.</div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="col-lg-4">
+    <h2 class="h6">Totaluri</h2>
+    <table class="table table-sm">
+      {% for categorie, numar, valoare in totaluri %}
+      <tr><th>{{ categorie }}</th><td class="text-end">{{ numar }} bunuri</td><td class="text-end">{{ valoare | suma }}</td></tr>
+      {% endfor %}
+    </table>
+    <h2 class="h6 mt-3">Comisiile copiate</h2>
+    {% for locatie, membri in comisii %}
+    <div class="small mb-2"><strong>{{ locatie }}:</strong>
+      {% for m in membri %}{{ m.nume }}{% if m.calitate == "PRESEDINTE" %} (președinte){% endif %}{% if not loop.last %}, {% endif %}
+      {% else %}<span class="text-danger">fără comisie</span>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  <div class="col-lg-8">
+    <h2 class="h6">Liste ({{ liste | length }}) <small class="text-muted fw-normal">— în ordinea tirajului</small></h2>
+    <table class="table table-sm align-middle">
+      <thead><tr><th>Locație</th><th>Activitate</th><th>Gestiune</th><th>Cat.</th><th>Cont</th>
+        <th class="text-end">Bunuri</th><th class="text-end">Valoare</th><th></th></tr></thead>
+      <tbody>
+      {% for locatie, activitate, gestiune, titular, categorie, cont, numar, valoare, persoana_id in liste %}
+        <tr>
+          <td>{{ locatie }}</td><td>{{ activitate }}</td>
+          <td>{{ gestiune }}{% if titular != gestiune %} <span class="small text-muted">(titular {{ titular }})</span>{% endif %}</td>
+          <td>{{ categorie }}</td><td>{{ cont }}</td>
+          <td class="text-end">{{ numar }}</td><td class="text-end">{{ valoare | suma }}</td>
+          <td class="text-nowrap small">{% if inventar.stare != "NEACTUALIZAT" and loop.changed(persoana_id, categorie) %}
+            <a target="_blank" href="{{ url_for('inventare.pdf', inventar_id=inventar.id, tip='liste', categorie=categorie, persoana_id=persoana_id) }}">PDF</a>
+            · <a target="_blank" href="{{ url_for('inventare.pdf', inventar_id=inventar.id, tip='inceput', categorie=categorie, persoana_id=persoana_id) }}">decl.</a>
+          {% endif %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="text-muted">Niciun bun în perimetru.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

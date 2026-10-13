@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titlu %}Șabloane de text{% endblock %}
+{% block continut %}
+<h1 class="h4 mb-3">Șabloane de text</h1>
+{% for cod, s in sabloane.items() %}
+{% set subiect, corp = valori[cod] %}
+<form method="post" class="card card-body mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="cod" value="{{ cod }}">
+  <h2 class="h6">{{ s.titlu }}</h2>
+  {% if s.ajutor %}<p class="small text-muted">{{ s.ajutor }}</p>{% endif %}
+  {% if s.subiect is not none %}
+  <label class="form-label" for="subiect-{{ cod }}">Subiect</label>
+  <input class="form-control mb-2" id="subiect-{{ cod }}" name="subiect" value="{{ subiect or '' }}">
+  {% endif %}
+  <label class="form-label visually-hidden" for="corp-{{ cod }}">Text</label>
+  <textarea class="form-control font-monospace small mb-2" id="corp-{{ cod }}" name="corp" rows="22">{{ corp }}</textarea>
+  <div>
+    <button class="btn btn-primary btn-sm" name="actiune" value="salveaza">Salvează</button>
+    <button class="btn btn-outline-secondary btn-sm" name="actiune" value="reseteaza"
+            onclick="return confirm('Reveniți la textul implicit?')">Revino la textul implicit</button>
+  </div>
+</form>
+{% endfor %}
+{% endblock %}

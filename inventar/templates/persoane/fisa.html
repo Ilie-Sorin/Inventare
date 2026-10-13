@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% from "_macros.html" import buton_post, stare, stare_document %}
+{% block titlu %}{{ persoana.nume }}{% endblock %}
+{% block continut %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h4 mb-1">{{ persoana.nume }} {{ stare(persoana.activ) }}</h1>
+    <div class="text-muted small">
+      {% if persoana.titular %}Gestiune secundară a lui
+        <a href="{{ url_for('persoane.fisa', persoana_id=persoana.titular.id) }}">{{ persoana.titular.nume }}</a> ·
+      {% endif %}
+      Marcă: {{ persoana.marca or "—" }} · E-mail: {{ persoana.email or "—" }}
+    </div>
+  </div>
+  {% if poate('OPERATOR') %}
+  <div class="text-nowrap">
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('persoane.editare', persoana_id=persoana.id) }}">Modifică</a>
+    {{ buton_post(url_for('persoane.comuta_activ', persoana_id=persoana.id), 'Dezactivează' if persoana.activ else 'Activează') }}
+  </div>
+  {% endif %}
+</div>
+
+{% if persoana.gestiuni_secundare %}
+<h2 class="h6">Gestiuni secundare</h2>
+<ul>
+  {% for g in persoana.gestiuni_secundare %}
+  <li><a href="{{ url_for('persoane.fisa', persoana_id=g.id) }}">{{ g.nume }}</a>{% if not g.activ %} (inactivă){% endif %}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+  <h2 class="h6 mb-0">Istoricul încadrărilor</h2>
+  {% if poate('OPERATOR') and persoana.activ %}
+  <a class="btn btn-sm btn-primary" href="{{ url_for('persoane.incadrare_noua', persoana_id=persoana.id) }}">Schimbă încadrarea</a>
+  {% endif %}
+</div>
+<table class="table table-sm align-middle">
+  <thead><tr><th>Valabilă de la</th><th>Locație</th><th>Activitate</th><th>Motiv</th><th></th></tr></thead>
+  <tbody>
+  {% for i in incadrari %}
+    <tr>
+      <td>{{ i.valabil_de_la | data_ro }}</td>
+      <td>{{ i.locatie.denumire }}</td>
+      <td>{{ i.activitate.denumire }}</td>
+      <td class="small">{{ i.motiv or "" }}</td>
+      <td class="text-end">
+        {% if i.document %}
+        <a class="small" href="{{ url_for('documente.vizualizare', document_id=i.document_id) }}">document nr. {{ i.document.numar }}</a>
+        {% elif poate('OPERATOR') and ultima and i.id == ultima.id %}
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('persoane.corectare_incadrare', incadrare_id=i.id) }}">Corectează</a>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if persoana.grupuri %}
+<h2 class="h6 mt-4">Grupuri</h2>
+<p>{{ persoana.grupuri | map(attribute="denumire") | join(", ") }}</p>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+  <h2 class="h6 mb-0">Bunuri în primire la {{ azi | data_ro }}: {{ bunuri | length }}, valoare {{ total | suma }}</h2>
+  {% if poate('OPERATOR') and bunuri %}
+  <div class="text-nowrap">
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('documente.formular', tip='TRANSFER', de_la=persoana.id) }}">Transfer</a>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('documente.formular', tip='TRANSFER', de_la=persoana.id, toate=1) }}">Transfer în masă</a>
+  </div>
+  {% endif %}
+</div>
+{% if bunuri %}
+<table class="table table-sm table-hover align-middle">
+  <thead><tr><th>Nr. inventar</th><th>Denumire</th><th>Cat.</th><th>Cont</th><th class="text-end">Valoare</th></tr></thead>
+  <tbody>
+  {% for b in bunuri %}
+    <tr>
+      <td><a href="{{ url_for('bunuri.fisa', bun_id=b.id) }}">{{ b.nr_inventar }}</a></td>
+      <td>{{ b.denumire }}</td><td>{{ b.categorie }}</td><td>{{ b.cont.simbol }}</td>
+      <td class="text-end">{{ b.pret | suma }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted small">Nu are bunuri în primire.</p>
+{% endif %}
+
+{% if documente %}
+<h2 class="h6 mt-4">Documente recente</h2>
+<table class="table table-sm align-middle">
+  <tbody>
+  {% for d in documente %}
+    <tr>
+      <td>{{ d.data | data_ro }}</td>
+      <td><a href="{{ url_for('documente.vizualizare', document_id=d.id) }}">{{ DENUMIRI_TIP[d.tip] }} {{ d.numar }}</a></td>
+      <td class="small">{{ d.explicatie or "" }}</td>
+      <td>{{ stare_document(d.stare) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<a class="small" href="{{ url_for('documente.lista', persoana_id=persoana.id) }}">Toate documentele persoanei</a>
+{% endif %}
+{% endblock %}

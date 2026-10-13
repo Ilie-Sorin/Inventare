@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp %}
+{% block titlu %}Import inițial{% endblock %}
+{% block continut %}
+<h1 class="h4">Import inițial</h1>
+{% if document %}
+<div class="alert alert-info">
+  Importul inițial a fost făcut la data de start {{ document.data | data_ro }}
+  ({{ document.linii | length }} bunuri repartizate). Bunurile noi se introduc de acum prin documente,
+  iar datele contabile se actualizează prin sincronizarea anuală.
+</div>
+{% else %}
+<p class="text-muted col-lg-8">
+  Se încarcă exportul contabil MF_BAZA (un fișier pentru mijloace fixe și unul pentru obiecte de inventar)
+  și extrasul din aplicația existentă. Aplicația afișează întâi un raport; <strong>nu se salvează nimic</strong>
+  până la confirmare.
+</p>
+<form method="post" enctype="multipart/form-data" class="col-md-8 col-lg-6" novalidate>
+  {{ form.hidden_tag() }}
+  {{ camp(form.mf_baza, multiple=True, accept=".xls") }}
+  {{ camp(form.extras, accept=".xlsx") }}
+  {{ camp(form.data_start, ajutor="Data la care se consideră că bunurile se aflau la persoanele din extras.") }}
+  {{ form.trimite(class="btn btn-primary") }}
+</form>
+{% endif %}
+{% endblock %}

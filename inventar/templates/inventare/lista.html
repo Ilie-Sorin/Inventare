@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stare_inventar %}
+{% block titlu %}Inventare{% endblock %}
+{% block continut %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Inventare generate</h1>
+  {% if poate('OPERATOR') %}
+  <a class="btn btn-primary btn-sm" href="{{ url_for('inventare.nou') }}">Generează inventar</a>
+  {% endif %}
+</div>
+<table class="table table-sm table-hover align-middle">
+  <thead><tr><th>Nr.</th><th>Data</th><th>Perimetru</th><th class="text-end">Bunuri</th><th>Stare</th><th>Generat</th></tr></thead>
+  <tbody>
+  {% for inv in inventare %}
+    <tr>
+      <td><a href="{{ url_for('inventare.detalii', inventar_id=inv.id) }}">{{ inv.id }}</a></td>
+      <td>{{ inv.data | data_ro }}</td>
+      <td class="small">{{ inv.perimetru_json | perimetru }}</td>
+      <td class="text-end">{{ inv.nr_linii }}</td>
+      <td>{{ stare_inventar(inv.stare) }}</td>
+      <td class="small">{{ inv.generat_la.strftime("%d.%m.%Y %H:%M") }}{% if inv.utilizator %}, {{ inv.utilizator.username }}{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-muted">Niciun inventar generat.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

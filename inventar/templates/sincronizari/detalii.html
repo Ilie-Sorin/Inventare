@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "_macros.html" import buton_post %}
+{% block titlu %}Sincronizarea {{ s.id }}{% endblock %}
+{% block continut %}
+<div class="d-flex justify-content-between align-items-start mb-2">
+  <div>
+    <h1 class="h4 mb-1">Sincronizarea nr. {{ s.id }}</h1>
+    <div class="small text-muted">Încărcată la {{ s.incarcat_la.strftime("%d.%m.%Y %H:%M") }}{% if s.utilizator %} de {{ s.utilizator.username }}{% endif %} ·
+      fișiere: {{ fisiere | map(attribute="original") | join(", ") }}
+      {% if s.aplicat_la %} · aplicată la {{ s.aplicat_la.strftime("%d.%m.%Y %H:%M") }}{% endif %}</div>
+  </div>
+  <div class="text-nowrap">
+    <a class="btn btn-sm btn-outline-secondary" target="_blank" href="{{ url_for('sincronizari.raport', sincronizare_id=s.id, format_='pdf') }}">Raport PDF</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('sincronizari.raport', sincronizare_id=s.id, format_='xlsx') }}">Raport Excel</a>
+    {% if poate('OPERATOR') and s.stare == "INCARCATA" %}
+    {{ buton_post(url_for('sincronizari.abandonare', sincronizare_id=s.id), 'Abandonează', 'btn-outline-danger',
+                  confirmare='Abandonați sincronizarea? Nu se aplică nimic.') }}
+    {% endif %}
+  </div>
+</div>
+
+{% if s.stare == "APLICATA" and pe_tip.BUN_NOU %}
+<div class="alert alert-info">Bunurile noi sunt acum la
+  <a href="{{ url_for('bunuri.situatie', stare='nerepartizate') }}">nerepartizate</a>; repartizați-le cu un document
+  de intrare (data propusă este cea a documentului de intrare din contabilitate).</div>
+{% endif %}
+
+<h2 class="h6 mt-3">Totaluri pe categorie și cont</h2>
+<table class="table table-sm w-auto">
+  <thead><tr><th>Categorie</th><th>Cont</th><th class="text-end">Contabilitate</th><th class="text-end">Valoare</th>
+    <th class="text-end">Aplicație</th><th class="text-end">Valoare</th><th class="text-end">Diferență</th></tr></thead>
+  <tbody>
+  {% for t in totaluri %}
+    {% set diferenta = (t.export_valoare | float) - (t.app_valoare | float) %}
+    <tr class="{{ 'table-warning' if t.export_numar != t.app_numar or diferenta | abs > 0.001 }}">
+      <td>{{ t.categorie }}</td><td>{{ t.cont }}</td>
+      <td class="text-end">{{ t.export_numar }}</td><td class="text-end">{{ t.export_valoare | suma }}</td>
+      <td class="text-end">{{ t.app_numar }}</td><td class="text-end">{{ t.app_valoare | suma }}</td>
+      <td class="text-end">{{ diferenta | round(2) | suma }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="small text-muted">Contabilitate: bunurile din export fără casare. Aplicație: bunurile care nu au ieșit,
+  cu datele de dinainte de sincronizare.</p>
+
+<form method="post" action="{{ url_for('sincronizari.aplicare', sincronizare_id=s.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% for tip, titlu in tipuri.items() if pe_tip[tip] %}
+  <h2 class="h6 mt-4">{{ titlu }} ({{ pe_tip[tip] | length }})</h2>
+  <table class="table table-sm align-middle">
+    <tbody>
+    {% for d, descriere, aplicabila in pe_tip[tip] %}
+      <tr>
+        <td style="width: 2rem">
+          {% if s.stare == "INCARCATA" and aplicabila %}
+          <input class="form-check-input" type="checkbox" name="diferente" value="{{ d.id }}" checked
+                 aria-label="Aplică pentru {{ d.nr_inventar }}">
+          {% endif %}
+        </td>
+        <td class="text-nowrap">{% if d.bun_id %}<a href="{{ url_for('bunuri.fisa', bun_id=d.bun_id) }}">{{ d.nr_inventar }}</a>{% else %}{{ d.nr_inventar }}{% endif %}</td>
+        <td class="small">{{ descriere }}</td>
+        <td class="text-nowrap small">{% if d.actiune %}{{ {"APLICAT": "aplicat", "IGNORAT": "neales", "SEMNALAT": "semnalat"}[d.actiune] }}{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted mt-3">Exportul corespunde exact aplicației: nicio diferență.</p>
+  {% endfor %}
+
+  {% if s.stare == "INCARCATA" and poate('OPERATOR') %}
+  <div class="alert alert-light border mt-3 small">La aplicare: se actualizează datele bifate (fără istoric), se
+    creează bunurile noi, se validează documentele de ieșire pentru casări și se marchează prezența în export.
+    Inventarele generate (nesemnate) devin „neactualizate”; cele blocate rămân neschimbate.
+    Totul reușește sau nimic nu se aplică.</div>
+  <button class="btn btn-primary" onclick="return confirm('Aplicați propunerile bifate?')">Aplică propunerile bifate</button>
+  {% endif %}
+</form>
+{% endblock %}

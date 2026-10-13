@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titlu %}E-mail (SMTP){% endblock %}
+{% block continut %}
+<h1 class="h4 mb-3">E-mail (SMTP)</h1>
+<div class="row g-4">
+  <form method="post" class="col-lg-6" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row g-2">
+      <div class="col-8"><label class="form-label" for="server">Server SMTP</label>
+        <input class="form-control" id="server" name="server" value="{{ setari.server }}"></div>
+      <div class="col-4"><label class="form-label" for="port">Port</label>
+        <input class="form-control" id="port" name="port" type="number" value="{{ setari.port }}"></div>
+    </div>
+    <label class="form-label mt-2" for="securitate">Securitate</label>
+    <select class="form-select" id="securitate" name="securitate">
+      {% for cod, text in securitati.items() %}<option value="{{ cod }}" {{ "selected" if setari.securitate == cod }}>{{ text }}</option>{% endfor %}
+    </select>
+    <label class="form-label mt-2" for="utilizator">Utilizator (gol dacă serverul nu cere autentificare)</label>
+    <input class="form-control" id="utilizator" name="utilizator" value="{{ setari.utilizator }}" autocomplete="off">
+    <label class="form-label mt-2" for="parola">Parolă</label>
+    <input class="form-control" id="parola" name="parola" type="password" autocomplete="new-password"
+           placeholder="{{ 'parola e salvată (criptat); lăsați gol ca să rămână' if are_parola else 'nicio parolă salvată' }}">
+    {% if are_parola %}
+    <div class="form-check mt-1">
+      <input class="form-check-input" type="checkbox" id="sterge_parola" name="sterge_parola" value="1">
+      <label class="form-check-label" for="sterge_parola">Șterge parola salvată</label>
+    </div>
+    {% endif %}
+    <div class="row g-2 mt-1">
+      <div class="col-6"><label class="form-label" for="expeditor">Adresa expeditorului</label>
+        <input class="form-control" id="expeditor" name="expeditor" type="email" value="{{ setari.expeditor }}"></div>
+      <div class="col-6"><label class="form-label" for="nume_expeditor">Numele expeditorului</label>
+        <input class="form-control" id="nume_expeditor" name="nume_expeditor" value="{{ setari.nume_expeditor }}"></div>
+    </div>
+    <button class="btn btn-primary mt-3" name="actiune" value="salveaza">Salvează</button>
+  </form>
+  <form method="post" class="col-lg-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2 class="h6">Mesaj de probă</h2>
+    <label class="form-label" for="adresa_test">Trimite la</label>
+    <input class="form-control mb-2" id="adresa_test" name="adresa_test" type="email" required>
+    <button class="btn btn-outline-primary" name="actiune" value="test">Trimite mesajul de probă</button>
+    <p class="small text-muted mt-2">Folosește setările salvate.</p>
+  </form>
+</div>
+{% endblock %}

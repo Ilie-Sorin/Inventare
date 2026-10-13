@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_macros.html" import paginare %}
+{% block titlu %}Jurnal de acțiuni{% endblock %}
+{% block continut %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Jurnal de acțiuni</h1>
+  <a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin.jurnal_csv', **filtre.to_dict()) }}">Export CSV (filtrul curent)</a>
+</div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-2"><input type="date" name="de_la" value="{{ filtre.de_la }}" class="form-control form-control-sm" aria-label="De la"></div>
+  <div class="col-md-2"><input type="date" name="pana_la" value="{{ filtre.pana_la }}" class="form-control form-control-sm" aria-label="Până la"></div>
+  <div class="col-md-2">
+    <select name="username" class="form-select form-select-sm" aria-label="Utilizator">
+      <option value="">Toți utilizatorii</option>
+      {% for u in optiuni.utilizatori %}<option {{ "selected" if filtre.username == u }}>{{ u }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="actiune" class="form-select form-select-sm" aria-label="Acțiune">
+      <option value="">Toate acțiunile</option>
+      {% for a in optiuni.actiuni %}<option {{ "selected" if filtre.actiune == a }}>{{ a }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-1">
+    <select name="rezultat" class="form-select form-select-sm" aria-label="Rezultat">
+      <option value="">Orice</option>
+      {% for r in ["OK", "ESEC", "EROARE"] %}<option {{ "selected" if filtre.rezultat == r }}>{{ r }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2"><input type="search" name="text" value="{{ filtre.text }}" class="form-control form-control-sm" placeholder="Text în detalii / IP" aria-label="Text"></div>
+  <div class="col-md-1"><button class="btn btn-secondary btn-sm w-100">Filtrează</button></div>
+</form>
+<table class="table table-sm align-middle small">
+  <thead><tr><th>Data și ora</th><th>Utilizator</th><th>IP</th><th>Acțiune</th><th>Obiect</th><th>Detalii</th></tr></thead>
+  <tbody>
+  {% for j in randuri %}
+    <tr class="{{ 'table-danger' if j.rezultat != 'OK' }}">
+      <td class="text-nowrap">{{ j.la.strftime("%d.%m.%Y %H:%M:%S") }}</td>
+      <td>{{ j.username }}</td>
+      <td>{{ j.ip or "" }}</td>
+      <td>{{ j.actiune }}{% if j.rezultat != "OK" %} <span class="badge text-bg-danger">{{ j.rezultat }}</span>{% endif %}</td>
+      <td>{{ j.obiect_tip or "" }}{% if j.obiect_id %} #{{ j.obiect_id }}{% endif %}</td>
+      <td class="text-break font-monospace" style="max-width: 40rem">{{ j.detalii_json if j.detalii_json != "{}" else "" }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-muted">Nicio înregistrare.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<div class="small text-muted mb-2">{{ total }} înregistrări</div>
+{{ paginare(pagina, pagini, 'admin.jurnal_actiuni', filtre) }}
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block titlu %}Trimitere e-mail{% endblock %}
+{% block continut %}
+<h1 class="h4 mb-1">Trimitere e-mail — inventarul nr. {{ randuri[0].inventar_id }}</h1>
+<p class="small"><a href="{{ url_for('email.loturi') }}">toate trimiterile</a> ·
+  <a href="{{ url_for('inventare.detalii', inventar_id=randuri[0].inventar_id) }}">inventarul</a></p>
+{% include "email/_stare.html" %}
+{% endblock %}

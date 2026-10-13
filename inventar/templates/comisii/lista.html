@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titlu %}Comisii de inventariere{% endblock %}
+{% block continut %}
+<h1 class="h4 mb-3">Comisii de inventariere</h1>
+<p class="text-muted small">O comisie nouă o închide automat pe cea în vigoare, cu o zi înainte de data de început.
+  Inventarele generate păstrează copia comisiei de la data lor.</p>
+{% for loc in locatii %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong class="{{ '' if loc.activ else 'text-muted' }}">{{ loc.denumire }}{% if not loc.activ %} (inactivă){% endif %}</strong>
+    {% if poate('OPERATOR') and loc.activ %}
+    <a class="btn btn-sm btn-primary" href="{{ url_for('comisii.editare', locatie_id=loc.id) }}">Comisie nouă</a>
+    {% endif %}
+  </div>
+  <ul class="list-group list-group-flush">
+  {% for c in comisii.get(loc.id, []) %}
+    <li class="list-group-item d-flex justify-content-between">
+      <div>
+        <div class="small text-muted">{{ c.valabil_de_la | data_ro }} – {{ (c.valabil_pana_la | data_ro) or "prezent" }}</div>
+        {% for m in c.membri %}
+          {{ m.nume }}{% if m.calitate == "PRESEDINTE" %} <span class="badge text-bg-light">președinte</span>{% endif %}{% if not loop.last %}, {% endif %}
+        {% endfor %}
+      </div>
+      {% if poate('OPERATOR') %}
+      <a class="btn btn-sm btn-outline-primary align-self-start" href="{{ url_for('comisii.editare', comisie_id=c.id) }}">Modifică</a>
+      {% endif %}
+    </li>
+  {% else %}
+    <li class="list-group-item text-muted">Nicio comisie.</li>
+  {% endfor %}
+  </ul>
+</div>
+{% else %}
+<p class="text-muted">Definiți întâi locațiile.</p>
+{% endfor %}
+{% endblock %}

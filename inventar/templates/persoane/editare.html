@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp %}
+{% block titlu %}{{ persoana.nume if persoana else "Persoană nouă" }}{% endblock %}
+{% block continut %}
+<h1 class="h4">{{ "Modificare " ~ persoana.nume if persoana else "Persoană nouă" }}</h1>
+<form method="post" class="col-md-8 col-lg-5" novalidate>
+  {{ form.hidden_tag() }}
+  {{ camp(form.nume, ajutor="Numele se tipărește exact așa pe liste. O persoană cu mai multe gestiuni are câte o înregistrare pentru fiecare.") }}
+  {{ camp(form.marca) }}
+  {{ camp(form.email, type="email", ajutor="Listele se trimit pe e-mail titularului.") }}
+  {{ camp(form.titular_id, ajutor="Completați doar pentru o gestiune secundară; la semnături apare numele titularului.") }}
+  {% if not persoana %}
+  <h2 class="h6 mt-4">Încadrare inițială</h2>
+  {{ camp(form.locatie_id) }}
+  {{ camp(form.activitate_id) }}
+  {{ camp(form.valabil_de_la) }}
+  {% endif %}
+  {{ form.trimite(class="btn btn-primary") }}
+  <a class="btn btn-link" href="{{ url_for('persoane.fisa', persoana_id=persoana.id) if persoana else url_for('persoane.lista') }}">Renunță</a>
+</form>
+{% endblock %}

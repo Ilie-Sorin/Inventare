@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp %}
+{% block titlu %}{{ info.titlu }}{% endblock %}
+{% block continut %}
+<h1 class="h4">{{ "Modificare" if obiect else "Adăugare" }} {{ info.singular }}</h1>
+<form method="post" class="col-md-6 col-lg-4" novalidate>
+  {{ form.hidden_tag() }}
+  {{ camp(form.cod) }}
+  {{ camp(form.denumire) }}
+  {{ form.trimite(class="btn btn-primary") }}
+  <a class="btn btn-link" href="{{ url_for('nomenclatoare.lista', tip=tip) }}">Renunță</a>
+</form>
+{% endblock %}

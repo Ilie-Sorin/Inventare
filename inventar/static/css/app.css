@@ -1,0 +1,4 @@
+/* Fonturi de sistem: fără descărcări externe, diacriticele sunt acoperite de Segoe UI. */
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+}

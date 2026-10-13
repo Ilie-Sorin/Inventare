@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp %}
+{% block titlu %}Comisie de inventariere{% endblock %}
+{% block continut %}
+<h1 class="h4">{{ "Modificare comisie" if comisie else "Comisie nouă" }}</h1>
+<form method="post" class="col-md-8 col-lg-5" novalidate>
+  {{ form.hidden_tag() }}
+  {{ camp(form.locatie_id) }}
+  <div class="row">
+    <div class="col">{{ camp(form.valabil_de_la) }}</div>
+    <div class="col">{{ camp(form.valabil_pana_la) }}</div>
+  </div>
+  {{ camp(form.presedinte) }}
+  {{ camp(form.membri) }}
+  {{ form.trimite(class="btn btn-primary") }}
+  <a class="btn btn-link" href="{{ url_for('comisii.lista') }}">Renunță</a>
+</form>
+{% endblock %}

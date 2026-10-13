@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp, erori_ascunse %}
+{% block titlu %}{{ DENUMIRI_TIP[tip] }}{% endblock %}
+{% block continut %}
+<h1 class="h4">{{ DENUMIRI_TIP[tip] }} — {{ "modificare ciornă" if document else "document nou" }}</h1>
+<form method="post" novalidate id="formular-document">
+  {{ form.hidden_tag() }}
+  {{ erori_ascunse(form, ["data", "serie", "numar", "explicatie"]
+                         + (["persoana_de_la_id"] if tip != "INTRARE" else [])
+                         + (["persoana_la_id"] if tip != "IESIRE" else ["motiv_iesire"])) }}
+  {# Schimbarea datei sau a predătorului reîncarcă lista de bunuri disponibile. #}
+  <div class="row g-3" hx-get="{{ url_for('documente.bunuri_disponibile', tip=tip) }}"
+       hx-trigger="change from:#data, change from:#persoana_de_la_id" hx-target="#bunuri"
+       hx-include="#formular-document">
+    <div class="col-md-2">{{ camp(form.data) }}</div>
+    <div class="col-md-1">{{ camp(form.serie) }}</div>
+    <div class="col-md-2">{{ camp(form.numar) }}</div>
+    {% if tip != "INTRARE" %}
+    <div class="col-md-3">{{ camp(form.persoana_de_la_id) }}</div>
+    {% endif %}
+    {% if tip != "IESIRE" %}
+    <div class="col-md-3">{{ camp(form.persoana_la_id) }}</div>
+    {% else %}
+    <div class="col-md-3">{{ camp(form.motiv_iesire) }}</div>
+    {% endif %}
+  </div>
+  {{ camp(form.explicatie) }}
+
+  <h2 class="h6">Bunuri
+    <small class="text-muted fw-normal">
+      {% if tip == "INTRARE" %}— bunuri nerepartizate la data documentului; data propusă e cea a documentului de intrare din contabilitate
+      {% else %}— bunurile persoanei care predă, la data documentului{% endif %}
+    </small>
+  </h2>
+  <div id="bunuri">{% include "documente/_bunuri.html" %}</div>
+
+  <div class="mt-3">
+    {{ form.salveaza(class="btn btn-outline-primary") }}
+    {{ form.valideaza(class="btn btn-primary") }}
+    <a class="btn btn-link" href="{{ url_for('documente.vizualizare', document_id=document.id) if document else url_for('documente.lista') }}">Renunță</a>
+  </div>
+</form>
+{% endblock %}

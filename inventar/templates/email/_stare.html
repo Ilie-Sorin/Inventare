@@ -1,0 +1,31 @@
+{% set trimise = randuri | selectattr("stare", "equalto", "TRIMIS") | list | length %}
+<div id="stare" {% if activ and in_asteptare %}hx-get="{{ url_for('email.lot', lot=lot) }}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <p>
+    {% if activ and in_asteptare %}<span class="spinner-border spinner-border-sm" role="status"></span> Se trimite… mai sunt {{ in_asteptare }}.
+    {% elif in_asteptare %}<span class="text-warning">Trimiterea a fost întreruptă; {{ in_asteptare }} mesaje au rămas netrimise.</span>
+    {% else %}Trimitere încheiată.{% endif %}
+    Trimise: {{ trimise }} · erori: {{ erori }}
+  </p>
+  <table class="table table-sm align-middle">
+    <thead><tr><th>Titular</th><th>Adresă</th><th>Stare</th><th>Trimis la</th><th>Eroare</th></tr></thead>
+    <tbody>
+    {% set culori = {"TRIMIS": "success", "EROARE": "danger", "IN_ASTEPTARE": "secondary"} %}
+    {% set texte = {"TRIMIS": "trimis", "EROARE": "eroare", "IN_ASTEPTARE": "în așteptare"} %}
+    {% for r in randuri %}
+      <tr>
+        <td>{{ r.titular.nume }}</td>
+        <td>{{ r.adresa }}</td>
+        <td><span class="badge text-bg-{{ culori[r.stare] }}">{{ texte[r.stare] }}</span></td>
+        <td class="small">{{ r.trimis_la.strftime("%d.%m.%Y %H:%M") if r.trimis_la else "" }}</td>
+        <td class="small text-danger">{{ r.eroare or "" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if poate('OPERATOR') and not activ and (erori or in_asteptare) %}
+  <form method="post" action="{{ url_for('email.retrimitere', lot=lot) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-warning btn-sm">Retrimite la cei netrimiși ({{ erori + in_asteptare }})</button>
+  </form>
+  {% endif %}
+</div>

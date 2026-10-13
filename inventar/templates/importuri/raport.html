@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block titlu %}Raport import inițial{% endblock %}
+{% block continut %}
+<h1 class="h4">Raport import inițial</h1>
+<p class="text-muted small">Fișiere: {{ fisiere | join(", ") }} · Data de start: {{ data_start | data_ro }} ·
+  <a href="{{ url_for('importuri.initial') }}">alte fișiere</a></p>
+
+<table class="table table-sm w-auto">
+  <thead><tr><th>Categorie</th><th class="text-end">Bunuri în export</th><th class="text-end">Valoare</th>
+    <th class="text-end">Repartizate</th><th class="text-end">Valoare repartizată</th></tr></thead>
+  <tbody>
+  {% for categorie, s in raport.statistici.categorii.items() %}
+    <tr><td>{{ categorie }}</td><td class="text-end">{{ s.bunuri }}</td><td class="text-end">{{ s.valoare | suma }}</td>
+      <td class="text-end">{{ s.repartizate }}</td><td class="text-end">{{ s.valoare_repartizata | suma }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="small">Persoane / gestiuni: <strong>{{ raport.statistici.persoane }}</strong>
+  (din care gestiuni secundare: {{ raport.statistici.gestiuni_secundare }}) ·
+  locații: {{ raport.statistici.locatii }} · activități: {{ raport.statistici.activitati }}</p>
+
+{% if raport.erori %}
+<div class="alert alert-danger">
+  <strong>{{ raport.erori | length }} erori blocante</strong> — importul nu se poate confirma până nu sunt corectate
+  în fișiere.
+  <ul class="mb-0 mt-2 overflow-auto" style="max-height: 20rem">
+    {% for e in raport.erori %}<li>{{ e }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% if raport.perechi %}
+  <h2 class="h6 mt-4">Nume foarte apropiate ({{ raport.perechi | length }})</h2>
+  <p class="small text-muted">Alegeți pentru fiecare pereche. „Gestiune secundară” înseamnă că persoana are mai
+    multe gestiuni: fiecare are listele ei, dar la semnături și la e-mail apare titularul.</p>
+  <table class="table table-sm align-middle">
+    <thead><tr><th>A</th><th>B</th><th>Similaritate</th><th>Decizie</th></tr></thead>
+    <tbody>
+    {% for p in raport.perechi %}
+      {% set nedecisa = p in raport.nedecise %}
+      <tr class="{{ 'table-warning' if nedecisa }}">
+        <td>{{ p.a }}</td><td>{{ p.b }}</td><td>{{ (p.similaritate * 100) | round | int }}%</td>
+        <td>
+          <select name="decizie_{{ p.cheie }}" class="form-select form-select-sm" aria-label="Decizie">
+            <option value="">— alegeți —</option>
+            {% for cod, text in optiuni.items() %}
+            <option value="{{ cod }}" {{ "selected" if decizii.get(p.cheie) == cod }}>{{ text }}</option>
+            {% endfor %}
+          </select>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% for titlu, mesaje in raport.avertismente.items() %}
+  <details class="mb-2">
+    <summary class="text-warning-emphasis">{{ titlu }}: <strong>{{ mesaje | length }}</strong></summary>
+    <ul class="small overflow-auto mt-1" style="max-height: 20rem">
+      {% for m in mesaje %}<li>{{ m }}</li>{% endfor %}
+    </ul>
+  </details>
+  {% endfor %}
+
+  <div class="mt-4">
+    <button class="btn btn-outline-secondary" name="actiune" value="recalculeaza">Recalculează raportul</button>
+    {% if not raport.erori %}
+    <button class="btn btn-primary" name="actiune" value="confirma"
+            onclick="return confirm('Confirmați importul? Se creează persoanele, bunurile și documentul inițial.')">
+      Confirmă importul</button>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

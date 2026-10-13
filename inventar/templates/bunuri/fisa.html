@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stare_document %}
+{% block titlu %}Bun {{ bun.nr_inventar }}{% endblock %}
+{% block continut %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h4 mb-1">{{ bun.nr_inventar }} — {{ bun.denumire }}</h1>
+    <div>
+      {% if stare == "la_persoana" %}
+        La <a href="{{ url_for('persoane.fisa', persoana_id=detinator.id) }}">{{ detinator.nume }}</a> (azi, {{ azi | data_ro }})
+      {% elif stare == "iesit" %}<span class="badge text-bg-secondary">ieșit din evidență</span>
+      {% else %}<span class="badge text-bg-warning">nerepartizat</span>{% endif %}
+    </div>
+  </div>
+  {% if poate('OPERATOR') %}
+  <div class="text-nowrap">
+    {% if stare == "nerepartizat" %}
+    <a class="btn btn-sm btn-primary" href="{{ url_for('documente.formular', tip='INTRARE', bun=bun.id) }}">Repartizează</a>
+    {% elif stare == "la_persoana" %}
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('documente.formular', tip='TRANSFER', de_la=detinator.id, bun=bun.id) }}">Transferă</a>
+    <a class="btn btn-sm btn-outline-danger" href="{{ url_for('documente.formular', tip='IESIRE', de_la=detinator.id, bun=bun.id) }}">Ieșire</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="row">
+  <div class="col-lg-6">
+    <h2 class="h6">Date din contabilitate <small class="text-muted fw-normal">(nu se modifică în aplicație)</small></h2>
+    <table class="table table-sm">
+      <tr><th class="w-50">Categorie</th><td>{{ bun.categorie }}</td></tr>
+      <tr><th>Cont</th><td>{{ bun.cont.simbol }}</td></tr>
+      <tr><th>U/M</th><td>{{ bun.um }}</td></tr>
+      <tr><th>Serie</th><td>{{ bun.serie or "" }}</td></tr>
+      <tr><th>Valoare de inventar</th><td>{{ bun.pret | suma }}</td></tr>
+      <tr><th>Nr. inventar vechi</th><td>{{ bun.nr_inventar_vechi or "" }}</td></tr>
+      <tr><th>Data punerii în funcțiune</th><td>{{ bun.data_pif | data_ro }}</td></tr>
+      <tr><th>Durată normală</th><td>{{ bun.durata_normala or "" }}</td></tr>
+      <tr><th>Data amortizării integrale</th><td>{{ bun.data_amortizare_integrala | data_ro }}</td></tr>
+      <tr><th>Cod clasificare</th><td>{{ bun.cod_clasificare or "" }}</td></tr>
+      <tr><th>Document de intrare</th><td>{{ bun.nr_doc_intrare or "" }} {{ bun.data_doc_intrare | data_ro }}</td></tr>
+      {% if bun.nr_doc_casare or bun.data_casare %}
+      <tr><th>Casare</th><td>{{ bun.nr_doc_casare or "" }} {{ bun.data_casare | data_ro }} {{ bun.explicatie_casare or "" }}</td></tr>
+      {% endif %}
+      <tr><th>Mențiuni</th><td class="small">{{ bun.mentiuni or "" }}</td></tr>
+      <tr><th>Actualizat din export la</th><td>{{ bun.actualizat_la.strftime("%d.%m.%Y %H:%M") }}{% if not bun.prezent_in_export %} <span class="badge text-bg-danger">absent din ultimul export</span>{% endif %}</td></tr>
+    </table>
+  </div>
+  <div class="col-lg-6">
+    <h2 class="h6">Istoric</h2>
+    <table class="table table-sm align-middle">
+      <thead><tr><th>Data</th><th>Document</th><th>Predă</th><th>Primește</th><th></th></tr></thead>
+      <tbody>
+      {% for l, d in istoric %}
+        <tr class="{{ 'text-muted' if d.stare != 'VALIDAT' }}">
+          <td>{{ d.data | data_ro }}</td>
+          <td><a href="{{ url_for('documente.vizualizare', document_id=d.id) }}">{{ DENUMIRI_TIP[d.tip] }} {{ d.numar }}</a></td>
+          <td>{{ l.persoana_de_la.nume if l.persoana_de_la else "" }}</td>
+          <td>{{ l.persoana_la.nume if l.persoana_la else ("— ieșire —" if d.tip == "IESIRE" else "") }}</td>
+          <td>{% if d.stare != "VALIDAT" %}{{ stare_document(d.stare) }}{% endif %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="text-muted">Nicio mișcare.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

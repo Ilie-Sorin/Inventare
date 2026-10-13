@@ -1,0 +1,10 @@
+.venv/
+instance/
+__pycache__/
+*.pyc
+
+logs/
+wheels/
+
+# Fișiere reale de la instituție (nume de angajați, bunuri): rămân doar local.
+docs/exemple/

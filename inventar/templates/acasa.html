@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block continut %}
+<h1 class="h4">Bun venit, {{ current_user.username }}</h1>
+<p class="text-muted">Aplicația pentru listele de inventariere.</p>
+<div class="list-group col-md-6">
+  <a class="list-group-item list-group-item-action" href="{{ url_for('persoane.lista') }}">Persoane / gestiuni</a>
+  <a class="list-group-item list-group-item-action" href="{{ url_for('nomenclatoare.lista', tip='locatii') }}">Locații</a>
+  <a class="list-group-item list-group-item-action" href="{{ url_for('nomenclatoare.lista', tip='activitati') }}">Activități</a>
+  <a class="list-group-item list-group-item-action" href="{{ url_for('comisii.lista') }}">Comisii de inventariere</a>
+  <a class="list-group-item list-group-item-action" href="{{ url_for('nomenclatoare.grupuri') }}">Grupuri de persoane</a>
+</div>
+{% endblock %}

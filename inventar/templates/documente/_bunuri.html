@@ -1,0 +1,34 @@
+{% if disponibile %}
+<div class="overflow-auto border rounded" style="max-height: 28rem">
+<table class="table table-sm table-hover align-middle mb-0">
+  <thead class="sticky-top bg-body">
+    <tr>
+      <th><input type="checkbox" class="form-check-input" aria-label="Toate"
+                 onclick="document.querySelectorAll('input[name=bunuri]').forEach(c => c.checked = this.checked)"></th>
+      <th>Nr. inventar</th><th>Denumire</th><th>Cat.</th><th>Cont</th><th class="text-end">Valoare</th>
+      {% if tip == "INTRARE" %}<th>Doc. intrare</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+  {% for b in disponibile %}
+    <tr>
+      <td><input type="checkbox" class="form-check-input" name="bunuri" value="{{ b.id }}" id="bun-{{ b.id }}"
+                 {{ "checked" if b.id in selectate }}></td>
+      <td><label for="bun-{{ b.id }}">{{ b.nr_inventar }}</label></td>
+      <td>{{ b.denumire }}</td>
+      <td>{{ b.categorie }}</td>
+      <td>{{ b.cont.simbol }}</td>
+      <td class="text-end">{{ b.pret | suma }}</td>
+      {% if tip == "INTRARE" %}<td class="small">{{ b.nr_doc_intrare or "" }} {{ b.data_doc_intrare | data_ro }}</td>{% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="small text-muted mt-1">{{ disponibile | length }} bunuri disponibile</div>
+{% else %}
+<p class="text-muted">
+  {% if tip == "INTRARE" %}Nu există bunuri nerepartizate la această dată.
+  {% else %}Alegeți persoana care predă și data; aici apar bunurile ei.{% endif %}
+</p>
+{% endif %}

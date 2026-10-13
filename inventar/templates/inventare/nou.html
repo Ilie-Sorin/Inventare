@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp, erori_ascunse %}
+{% block titlu %}Generare inventar{% endblock %}
+{% block continut %}
+<h1 class="h4">Generare inventar</h1>
+<p class="text-muted small col-lg-8">Se copiază situația la data aleasă: din această copie se tipăresc listele.
+  Lăsați un filtru gol pentru „toate”. Gestiunile alese direct și cele din grupuri se adună.</p>
+<form method="post" novalidate>
+  {{ form.hidden_tag() }}
+  {{ erori_ascunse(form, ["data", "locatii", "activitati", "persoane", "grupuri", "categorii", "conturi"]) }}
+  {% if avertismente %}
+  <div class="alert alert-warning">
+    <strong>Verificați înainte de generare:</strong>
+    <ul class="mb-2">{% for m in avertismente %}<li>{{ m }}</li>{% endfor %}</ul>
+    <input type="hidden" name="confirmat" value="1">
+    <button class="btn btn-warning btn-sm">Generează oricum</button>
+  </div>
+  {% endif %}
+  <div class="row g-3">
+    <div class="col-md-2">{{ camp(form.data) }}</div>
+    <div class="col-md-2">{{ camp(form.categorii, size=2) }}</div>
+    <div class="col-md-2">{{ camp(form.conturi, size=6) }}</div>
+    <div class="col-md-3">{{ camp(form.locatii, size=6) }}</div>
+    <div class="col-md-3">{{ camp(form.activitati, size=6) }}</div>
+    <div class="col-md-6">{{ camp(form.persoane, size=8, ajutor="Ctrl + clic pentru mai multe.") }}</div>
+    <div class="col-md-3">{{ camp(form.grupuri, size=8) }}</div>
+  </div>
+  {% if not avertismente %}{{ form.genereaza(class="btn btn-primary") }}{% endif %}
+  <a class="btn btn-link" href="{{ url_for('inventare.lista') }}">Renunță</a>
+</form>
+{% endblock %}

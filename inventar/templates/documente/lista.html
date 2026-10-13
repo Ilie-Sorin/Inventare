@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_macros.html" import paginare, stare_document %}
+{% block titlu %}Documente{% endblock %}
+{% block continut %}
+<h1 class="h4 mb-3">Documente</h1>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-2">
+    <select name="tip" class="form-select" aria-label="Tip">
+      <option value="">Toate tipurile</option>
+      {% for cod, den in DENUMIRI_TIP.items() %}<option value="{{ cod }}" {{ "selected" if filtre.tip == cod }}>{{ den }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="stare" class="form-select" aria-label="Stare">
+      <option value="">Toate stările</option>
+      {% for cod, den in [("CIORNA", "Ciorne"), ("VALIDAT", "Validate"), ("ANULAT", "Anulate")] %}
+      <option value="{{ cod }}" {{ "selected" if filtre.stare == cod }}>{{ den }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select name="persoana_id" class="form-select" aria-label="Persoană">
+      {% for id, nume in persoane %}<option value="{{ id or '' }}" {{ "selected" if filtre.persoana_id == id | string }}>{{ "Toate persoanele" if not id else nume }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2"><input type="date" name="de_la" value="{{ filtre.de_la }}" class="form-control" aria-label="De la"></div>
+  <div class="col-md-2"><input type="date" name="pana_la" value="{{ filtre.pana_la }}" class="form-control" aria-label="Până la"></div>
+  <div class="col-md-1"><button class="btn btn-secondary w-100">Filtrează</button></div>
+</form>
+<table class="table table-sm table-hover align-middle">
+  <thead><tr><th>Data</th><th>Tip</th><th>Nr.</th><th>Explicație</th><th class="text-end">Bunuri</th><th>Stare</th></tr></thead>
+  <tbody>
+  {% for d, linii in randuri %}
+    <tr>
+      <td>{{ d.data | data_ro }}</td>
+      <td>{{ DENUMIRI_TIP[d.tip] }}</td>
+      <td><a href="{{ url_for('documente.vizualizare', document_id=d.id) }}">{{ d.serie or "" }} {{ d.numar }}</a></td>
+      <td class="small">{{ d.explicatie or "" }}</td>
+      <td class="text-end">{{ linii }}</td>
+      <td>{{ stare_document(d.stare) }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-muted">Niciun document.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<div class="small text-muted mb-2">{{ total }} documente</div>
+{{ paginare(pagina, pagini, 'documente.lista', filtre) }}
+{% endblock %}

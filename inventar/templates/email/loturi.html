@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titlu %}Trimiteri e-mail{% endblock %}
+{% block continut %}
+<h1 class="h4 mb-3">Trimiteri e-mail</h1>
+<p class="small text-muted">O trimitere nouă se pornește din pagina „Listări” a unui inventar.</p>
+<table class="table table-sm align-middle">
+  <thead><tr><th>Pornită la</th><th>Inventar</th><th class="text-end">Trimise</th><th class="text-end">Erori</th>
+    <th class="text-end">În așteptare</th><th></th></tr></thead>
+  <tbody>
+  {% for l in loturi %}
+    <tr>
+      <td>{{ l.creat_la.strftime("%d.%m.%Y %H:%M") }}</td>
+      <td><a href="{{ url_for('inventare.detalii', inventar_id=l.inventar_id) }}">nr. {{ l.inventar_id }}</a></td>
+      <td class="text-end">{{ l.stari.TRIMIS }}</td>
+      <td class="text-end {{ 'text-danger fw-bold' if l.stari.EROARE }}">{{ l.stari.EROARE }}</td>
+      <td class="text-end">{{ l.stari.IN_ASTEPTARE }}</td>
+      <td class="text-end"><a href="{{ url_for('email.lot', lot=l.lot) }}">detalii</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-muted">Nicio trimitere.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
