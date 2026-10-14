@@ -7,8 +7,9 @@ from sqlalchemy.orm import Session
 from inventar import jurnal
 from inventar.domain.comun import EroareValidare, aplica_modificari, curata_text, exista_alta_valoare
 from inventar.domain.incadrare import incadrari_la
+from inventar.domain.neactualizare import marcheaza_cu_linii
 from inventar.drepturi import Actor, cere_rol
-from inventar.models import Activitate, Grup, Locatie, Persoana
+from inventar.models import Activitate, Grup, InventarLinie, Locatie, Persoana
 
 # Locațiile și activitățile au aceeași formă, dar rămân nomenclatoare
 # independente (§7.2): aceeași denumire poate exista în ambele.
@@ -55,6 +56,10 @@ def modifica_nomenclator(session: Session, actor: Actor, model: Nomenclator, obi
     if schimbari:
         nume = _NUME[model]
         jurnal.scrie(session, actor, f"{nume.upper()}_MODIFICATA", nume, obiect.id, schimbari)
+    if "denumire" in schimbari:
+        # Denumirea e copiată în instantaneu („Loc de depozitare”, activitatea).
+        coloana = InventarLinie.locatie_id if model is Locatie else InventarLinie.activitate_id
+        marcheaza_cu_linii(session, actor, f"redenumirea „{denumire}”", coloana == obiect.id)
     session.commit()
     return obiect
 

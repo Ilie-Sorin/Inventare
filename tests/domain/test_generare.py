@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import func, select
 
-from inventar.domain.comisii import MembruNou, creeaza_comisie
+from inventar.domain.comisii import MembruNou, creeaza_comisie, modifica_comisie
 from inventar.domain.comun import EroareValidare
 from inventar.domain.documente import LinieNoua, anuleaza, salveaza_ciorna, valideaza
 from inventar.domain.generare import (
@@ -18,9 +18,11 @@ from inventar.domain.generare import (
     sterge,
 )
 from inventar.domain.incadrare import corecteaza_ultima_incadrare
+from inventar.domain.nomenclatoare import modifica_nomenclator
+from inventar.domain.persoane import modifica_persoana
 from inventar.domain.schimbare_incadrare import schimba_incadrarea
 from inventar.drepturi import AccesInterzis
-from inventar.models import Inventar, InventarLinie, Jurnal
+from inventar.models import Activitate, Comisie, Inventar, InventarLinie, Jurnal, Locatie
 from tests.conftest import ADMIN_CLI, OPERATOR
 
 START = date(2025, 1, 1)
@@ -181,6 +183,78 @@ def test_schimbarea_si_corectarea_incadrarii_marcheaza(session, lume):
     initiala = lume["dan"].incadrari[0]
     corecteaza_ultima_incadrare(session, OPERATOR, initiala.id, nom["botosani"].id, nom["2c"].id, START, None)
     assert inv.stare == "NEACTUALIZAT"
+
+
+
+def redenumeste(session, p, nume=None, titular_id="neschimbat"):
+    titular = p.titular_id if titular_id == "neschimbat" else titular_id
+    return modifica_persoana(session, OPERATOR, p.id, nume or p.nume, p.marca, p.email, titular)
+
+
+def test_redenumirea_gestiunii_marcheaza_doar_inventarele_ei(session, lume):
+    cu_marcela = genereaza(session, OPERATOR, D, Perimetru())
+    fara_marcela = genereaza(session, OPERATOR, D, Perimetru(categorii=("OI",)))
+    blocat = genereaza(session, OPERATOR, D, Perimetru(categorii=("MF",)))
+    blocheaza(session, OPERATOR, blocat.id)
+
+    redenumeste(session, lume["marcela"], "HRIŢCU MARCELA")
+
+    assert (cu_marcela.stare, fara_marcela.stare, blocat.stare) == ("NEACTUALIZAT", "GENERAT", "BLOCAT")
+    assert {x.gestiune for x in linii(session, blocat)} == {"HRITCU MARCELA"}
+
+
+def test_redenumirea_titularului_si_schimbarea_titularului_marcheaza(session, lume):
+    # Doar ET2 (gestiunea secundară a lui Dan) e în acest perimetru; Dan apare ca titular.
+    inv = genereaza(session, OPERATOR, D, Perimetru(persoane=(lume["et2"].id,)))
+    redenumeste(session, lume["dan"], "NECHIFOR DAN IOAN")
+    assert inv.stare == "NEACTUALIZAT"
+
+    regenereaza(session, OPERATOR, inv.id)
+    redenumeste(session, lume["et2"], titular_id=None)
+    assert inv.stare == "NEACTUALIZAT"
+
+
+def test_modificari_fara_efect_pe_liste_nu_marcheaza(session, lume):
+    inv = genereaza(session, OPERATOR, D, Perimetru())
+    p = lume["marcela"]
+    modifica_persoana(session, OPERATOR, p.id, p.nume, "123", "marcela@exemplu.ro", None)
+    assert inv.stare == "GENERAT"
+
+
+def test_redenumirea_locatiei_sau_activitatii_marcheaza(session, lume):
+    nom = lume["nom"]
+    inv = genereaza(session, OPERATOR, D, Perimetru(locatii=(nom["botosani"].id,)))
+    modifica_nomenclator(session, OPERATOR, Activitate, nom["2c"].id, "Botosani (2C)", "Alt nume")
+    assert inv.stare == "GENERAT"  # activitatea nu e în acest inventar
+    modifica_nomenclator(session, OPERATOR, Locatie, nom["botosani"].id, "Botosani", "A.J.F.P. BOTOSANI")
+    assert inv.stare == "NEACTUALIZAT"
+
+    regenereaza(session, OPERATOR, inv.id)
+    modifica_nomenclator(session, OPERATOR, Activitate, nom["1int"].id, "Botosani (1Int)", "Altă activitate")
+    assert inv.stare == "NEACTUALIZAT"
+
+
+def test_comisia_modificata_sau_noua_marcheaza(session, lume):
+    nom = lume["nom"]
+    inv = genereaza(session, OPERATOR, D, Perimetru())
+    dorohoi = genereaza(session, OPERATOR, D, Perimetru(locatii=(nom["dorohoi"].id,)))
+    botosani = session.scalar(select(Comisie).where(Comisie.locatie_id == nom["botosani"].id))
+
+    # Doar perioada se schimbă, comisia valabilă la D rămâne aceeași: nimic de regenerat.
+    modifica_comisie(session, OPERATOR, botosani.id, date(2024, 1, 1), None,
+                     [MembruNou("POPESCU ANA", "PRESEDINTE"), MembruNou("IONESCU ŞTEFAN", "MEMBRU")])
+    assert inv.stare == "GENERAT"
+
+    modifica_comisie(session, OPERATOR, botosani.id, date(2024, 1, 1), None,
+                     [MembruNou("POPESCU ANA", "PRESEDINTE"), MembruNou("GEORGESCU ION", "MEMBRU")])
+    assert (inv.stare, dorohoi.stare) == ("NEACTUALIZAT", "GENERAT")
+
+    regenereaza(session, OPERATOR, inv.id)
+    creeaza_comisie(session, OPERATOR, nom["botosani"].id, date(2025, 12, 1), None,
+                    [MembruNou("NOU NOU", "PRESEDINTE")])
+    assert inv.stare == "GENERAT"  # comisia nouă începe după data inventarului
+    creeaza_comisie(session, OPERATOR, nom["dorohoi"].id, START, None, [MembruNou("VASILE VASILE", "PRESEDINTE")])
+    assert dorohoi.stare == "NEACTUALIZAT"  # înainte nu avea comisie
 
 
 def test_regenerare(session, lume):

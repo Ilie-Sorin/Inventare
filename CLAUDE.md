@@ -422,7 +422,7 @@ Lucrează **o fază pe rând**. La finalul fiecărei faze: teste verzi, scurt re
   - Regenerarea păstrează numărul inventarului (înlocuiește liniile în aceeași tranzacție).
   - Blocarea doar din GENERAT; deblocarea (ADMIN, cu motiv) duce în NEACTUALIZAT, deci reblocarea cere regenerare.
   - Avertismentele se arată înainte de generare și cer confirmare („Generează oricum”).
-  - Nu marchează NEACTUALIZAT (de discutat): redenumirea unei persoane, schimbarea titularului, modificarea comisiei — instantaneul păstrează valorile vechi până la regenerare.
+  - Decis ulterior (2026-10-14): marchează NEACTUALIZAT și redenumirea unei gestiuni sau a titularului, schimbarea titularului, redenumirea locației / activității și modificarea comisiei — doar inventarele GENERAT care le conțin (comisia: când copia din instantaneu diferă de comisia valabilă la data inventarului).
 - Faza 5 — **terminată** (2026-10-13): `pdf/comun.py` (fonturi DejaVu Sans + Condensed + Oblique în `pdf/fonts/`, `canvas_numerotat`, `nume_fisier`), `pdf/lista.py` (14-3-12 desenat pe pânză cu paginare proprie), `pdf/declaratii.py` (Platypus: început 1/pagină, sfârșit 2/pagină), `tiparire.py` (serviciu: numai din instantaneu, jurnal PDF_LISTE / PDF_DECLARATII), tabela `sablon` + ecranul „Șabloane de text”. 212 teste verzi; tiraj de ~300 de pagini în ~1,3 s.
   - Urmează §10.1 acolo unde diferă de modele: seria pe rândul 2 din col. 1 (nu în col. 13), valoarea pe fiecare rând în col. 9, scriptice înaintea faptice, „inventarierii”.
   - Greșeli de tipar corectate în textul declarațiilor: „fără”, „s-au întocmit”, „la contabilitate”, „inventarierea”.
@@ -434,7 +434,7 @@ Lucrează **o fază pe rând**. La finalul fiecărei faze: teste verzi, scurt re
   - Centralizatoare: categorii (categorie → cont analitic), conturi (sintetic → analitic), locații (locație → categorie → sintetic), activități (la fel), gestiuni (gestiune → categorie).
   - CSV: separator „;”, BOM UTF-8, virgulă zecimală, date dd.mm.yyyy (pentru Excel în limba română).
   - Fișierele (PDF / Excel / CSV) nu se produc dintr-un inventar NEACTUALIZAT; centralizatorul pe ecran se poate vedea.
-  - „Doar gestiunile cu bunuri”: instantaneul conține doar gestiunile cu bunuri, deci filtrul e implicit mereu activ — de discutat dacă se vor declarații și pentru gestiunile fără bunuri.
+  - „Doar gestiunile cu bunuri”: instantaneul conține doar gestiunile cu bunuri, deci filtrul e implicit mereu activ. Decis (2026-10-14): nu se fac declarații pentru gestiunile fără bunuri.
 - Faza 7 — **terminată** (2026-10-13): `criptare.py` (Fernet, cheie în `instance/secret.key`), `email/smtp.py` (setări SMTP, `Conexiune` refolosită pe lot), `email/trimitere.py` (previzualizare, lot, `trimite_lot`, retrimitere, mesaj de probă), tabela `trimitere_email` (cu `lot`, `subiect`, `corp`), șablonul `email_inventar` cu câmpurile {nume} {data} {locatie} validate la salvare; ecrane: previzualizare + confirmare, starea lotului (htmx la 2 s), lista trimiterilor, Administrare → E-mail (SMTP). 240 de teste verzi, inclusiv pe un SMTP local (aiosmtpd, dependență doar de test); probă reală cu Waitress + fir separat: 5/5 mesaje.
   - Un mesaj pe titular, cu PDF-urile MF / OI ale tuturor gestiunilor lui; atașamentele se generează la trimitere, din instantaneu; filtrul de listare se aplică.
   - O eroare de conexiune la server se aplică întregului rest al lotului (fără să aștepte expirarea la fiecare destinatar).
@@ -450,7 +450,7 @@ Lucrează **o fază pe rând**. La finalul fiecărei faze: teste verzi, scurt re
   - Instalarea reprodusă după README într-un director curat (pachete descărcate → instalare `--no-index` → migrări → admin → Waitress cu parametrii serviciului → backup → restaurare → toate testele verzi). NSSM și sarcina programată verificate doar în `-Simulare` (nu există NSSM / drepturi de administrator pe mașina de dezvoltare); Python 3.13 în loc de 3.12.
   - În spatele proxy-ului, aplicația trebuie să vadă numele public al site-ului (Host păstrat sau `X-Forwarded-Host`), altfel CSRF strict pe HTTPS refuză formularele; Waitress are încredere doar în proxy-ul de pe 127.0.0.1. Pentru IIS: `preserveHostHeader=True` (în README).
   - În șirurile din `.ps1` nu se folosesc ghilimele „ ”: PowerShell le tratează ca delimitatori.
-- **Toate fazele sunt terminate.** Rămân deschise: declarații pentru gestiunile fără bunuri (filtrul „doar gestiunile cu bunuri”) și marcarea NEACTUALIZAT la redenumiri / schimbări de comisie — ambele așteaptă decizia utilizatorului.
+- **Toate fazele sunt terminate.** Nu mai sunt decizii deschise. 271 de teste verzi.
 - Convenție stabilită: serviciile publice primesc `(session, actor, ...)`, verifică rolul, scriu în jurnal și fac ele `commit`; `jurnal.scrie` nu face commit.
 - Dezvoltarea rulează pe Python 3.13 (3.12 nu e instalat pe mașina de dezvoltare).
 - Cerințele complete (cu justificări) sunt în documentul „Aplicație liste de inventariere — Cerințe”. Acest fișier conține tot ce e necesar pentru implementare.

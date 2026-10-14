@@ -7,9 +7,10 @@ from sqlalchemy.orm import Session
 from inventar import jurnal
 from inventar.domain.comun import EroareValidare, aplica_modificari, curata_text, exista_alta_valoare, text_optional
 from inventar.domain.incadrare import creeaza_incadrare
+from inventar.domain.neactualizare import marcheaza_cu_linii
 from inventar.domain.stoc import are_bunuri
 from inventar.drepturi import Actor, cere_rol
-from inventar.models import Persoana
+from inventar.models import InventarLinie, Persoana
 
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -79,6 +80,14 @@ def modifica_persoana(
     })
     if schimbari:
         jurnal.scrie(session, actor, "PERSOANA_MODIFICATA", "persoana", persoana.id, schimbari)
+    # Numele gestiunii și al titularului sunt copiate în instantaneu și tipărite pe liste.
+    conditii = []
+    if "nume" in schimbari:
+        conditii += [InventarLinie.persoana_id == persoana.id, InventarLinie.titular_id == persoana.id]
+    if "titular_id" in schimbari:
+        conditii.append(InventarLinie.persoana_id == persoana.id)
+    if conditii:
+        marcheaza_cu_linii(session, actor, f"modificarea gestiunii „{persoana.nume}”", *conditii)
     session.commit()
     return persoana
 
