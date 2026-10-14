@@ -1,0 +1,16 @@
+# Caddy în fața aplicației: HTTPS cu un certificat emis chiar de Caddy („tls internal”), pentru cazul în
+# care instituția nu poate da un certificat. Se copiază în C:\Caddy\Caddyfile și se înlocuiesc numele de
+# mai jos cu cele sub care utilizatorii ajung la server (vezi README.md, §5).
+{
+	# Caddy nu își pune singur rădăcina în depozitul de încredere: o importăm noi, cu știință, pe stații.
+	skip_install_trust
+}
+
+srv-inventar, srv-inventar.intern.local {
+	tls internal
+	reverse_proxy 127.0.0.1:8080
+	# Exporturile încărcate au câțiva MB; aplicația acceptă până la 50 MB.
+	request_body {
+		max_size 50MB
+	}
+}

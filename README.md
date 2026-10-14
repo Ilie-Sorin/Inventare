@@ -17,7 +17,7 @@ browser ──HTTPS──> IIS sau Caddy (proxy) ──HTTP 127.0.0.1:8080──
 | Windows Server 2016+ / Windows 10+ | cu PowerShell 5.1 (inclus) |
 | Python 3.12 (64 de biți) | de la python.org; la instalare bifați „Add python.exe to PATH” |
 | NSSM 2.24 | https://nssm.cc — un singur `nssm.exe`, de pus de ex. în `C:\nssm\` |
-| IIS (cu URL Rewrite + ARR) sau Caddy | pentru HTTPS; vezi §5 |
+| Caddy 2 sau IIS (cu URL Rewrite + ARR) | pentru HTTPS, cu sau fără certificatul instituției; vezi §5 |
 
 Serverul **nu are nevoie de internet la rulare**: Bootstrap, htmx și fonturile sunt incluse în aplicație.
 Pentru instalare, pachetele Python se descarcă pe un alt calculator (§2.1).
@@ -115,19 +115,61 @@ Aplicația ascultă doar pe `127.0.0.1`. Proxy-ul publică HTTPS în rețeaua in
 > Îl vede fie din antetul `Host` păstrat de proxy, fie din `X-Forwarded-Host`. Altfel, pe HTTPS, toate
 > formularele sunt refuzate cu „The referrer does not match the host”.
 
-**Caddy** (`Caddyfile`, cu certificatul instituției):
+### 5.1. Caddy
 
+Caddy e un singur fișier, `caddy.exe`. Se descarcă pe calculatorul cu internet de la
+https://github.com/caddyserver/caddy/releases (`caddy_<versiune>_windows_amd64.zip`; testat cu 2.11.7) și se
+copiază pe server în `C:\Caddy\`, împreună cu modelul `scripts\Caddyfile`. Caddy păstrează antetul `Host` și
+trimite singur `X-Forwarded-For`, `X-Forwarded-Proto` și `X-Forwarded-Host`.
+
+**Certificatul.** În `C:\Caddy\Caddyfile`, pe primul rând al blocului site-ului se trec numele sub care
+utilizatorii ajung la server (numele scurt, numele din DNS, eventual adresa IP), despărțite prin virgulă.
+Certificatul e valabil doar pentru aceste nume. Apoi, una din două:
+
+- **cu certificatul instituției** (de preferat, dacă IT-ul îl poate da): în loc de `tls internal` se scrie
+  `tls C:\certificate\inventar.crt C:\certificate\inventar.key`;
+- **fără certificat** (`tls internal`, ca în model): Caddy își creează propria autoritate de certificare și
+  emite singur certificatul site-ului, pe care îl și reînnoiește. Stațiile trebuie să aibă încredere în
+  autoritatea lui (pasul de mai jos), altfel browserul arată „Conexiunea nu este privată”.
+
+**Serviciul Windows**, dintr-un PowerShell pornit ca Administrator:
+
+```powershell
+C:\Caddy\caddy.exe validate --config C:\Caddy\Caddyfile --adapter caddyfile
+
+C:\nssm\nssm.exe install Caddy C:\Caddy\caddy.exe "run --config C:\Caddy\Caddyfile --adapter caddyfile"
+C:\nssm\nssm.exe set Caddy AppDirectory C:\Caddy
+C:\nssm\nssm.exe set Caddy AppEnvironmentExtra XDG_DATA_HOME=C:\Caddy\data XDG_CONFIG_HOME=C:\Caddy\config
+C:\nssm\nssm.exe set Caddy AppStdout C:\Caddy\caddy.log
+C:\nssm\nssm.exe set Caddy AppStderr C:\Caddy\caddy.log
+C:\nssm\nssm.exe set Caddy AppRotateFiles 1
+C:\nssm\nssm.exe set Caddy AppRotateOnline 1
+C:\nssm\nssm.exe set Caddy AppRotateBytes 10485760
+C:\nssm\nssm.exe start Caddy
+
+New-NetFirewallRule -DisplayName "Inventare HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443,80 -Action Allow
 ```
-inventar.intern.local {
-    tls C:\certificate\inventar.crt C:\certificate\inventar.key
-    reverse_proxy 127.0.0.1:8080
-}
-```
 
-Caddy păstrează antetul `Host` și trimite singur `X-Forwarded-For`, `X-Forwarded-Proto` și `X-Forwarded-Host`.
-Se instalează și el ca serviciu, tot cu NSSM.
+`XDG_DATA_HOME` ține datele lui Caddy (inclusiv autoritatea de certificare) în `C:\Caddy\data`; fără el ar
+ajunge în profilul contului de sistem. Portul 80 doar redirecționează spre HTTPS.
 
-**IIS:**
+**Doar pentru `tls internal`: încrederea pe stații.** La prima pornire, Caddy creează
+`C:\Caddy\data\caddy\pki\authorities\local\root.crt` (valabil 10 ani). Pe fiecare stație, o singură dată:
+1. se copiază `root.crt` pe stație și se deschide cu dublu-clic → *Instalare certificat*;
+2. *Mașină locală* (cere drepturi de administrator; altfel *Utilizator curent*, pentru fiecare utilizator);
+3. *Plasați toate certificatele în următorul depozit* → *Autorități de certificare rădăcină de încredere*;
+4. se repornește browserul. Chrome și Edge folosesc depozitul Windows. Dacă Firefox încă avertizează,
+   `root.crt` se importă și din *Setări → Confidențialitate și securitate → Certificate → Autorități*.
+
+Nu se instalează niciun program, doar certificatul. **Se copiază o dată, într-un loc sigur, directorul
+`C:\Caddy\data\caddy\pki`:** conține cheia autorității (`root.key`, secretă). Dacă se pierde, Caddy creează
+o autoritate nouă și `root.crt` trebuie importat din nou pe toate stațiile.
+
+> `curl` pe Windows refuză certificatul cu „the revocation status is unknown”, pentru că autoritatea lui
+> Caddy nu publică liste de revocare. Pentru verificări cu `curl` se adaugă `--ssl-no-revoke`; browserele
+> nu sunt afectate.
+
+### 5.2. IIS
 1. Instalați modulele *URL Rewrite* și *Application Request Routing*, apoi activați proxy-ul (ARR → Server Proxy Settings → Enable proxy).
 2. Pe site, legați HTTPS (binding) cu certificatul instituției.
 3. Adăugați o regulă de rescriere *Reverse Proxy* către `127.0.0.1:8080`.
@@ -176,6 +218,7 @@ nssm start Inventare
 | Cine a făcut o modificare | în aplicație: Administrare → Jurnal de acțiuni (cu export CSV) |
 | E-mailurile nu pleacă | E-mail → trimiterea respectivă (eroarea pe fiecare destinatar); Administrare → E-mail (SMTP) → Mesaj de probă |
 | Backup-ul nu rulează | Task Scheduler → „Inventare - backup zilnic” → Istoric (codul de ieșire nenul înseamnă eroare) |
+| Browserul arată „Conexiunea nu este privată” | `root.crt` al lui Caddy nu e importat pe stație (§5.1) sau numele din bara de adrese lipsește din `C:\Caddy\Caddyfile`; `C:\Caddy\caddy.log` |
 | „Parola SMTP nu poate fi decriptată” | `instance\secret.key` a fost înlocuit; reintroduceți parola în Administrare → E-mail (SMTP) |
 
 ## 9. Dezvoltare

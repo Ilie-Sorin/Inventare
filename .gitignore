@@ -5,6 +5,7 @@ __pycache__/
 
 logs/
 wheels/
+caddy/
 
 # Fișiere reale de la instituție (nume de angajați, bunuri): rămân doar local.
 docs/exemple/
