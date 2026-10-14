@@ -15,6 +15,10 @@ from inventar.models import InventarLinie, Persoana
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
+def adresa_valida(email: str) -> bool:
+    return bool(_EMAIL.match(email))
+
+
 def _verifica_date(session: Session, nume: str, email: str | None, exclude_id: int | None) -> None:
     if not nume:
         raise EroareValidare("Numele este obligatoriu.")
@@ -22,7 +26,7 @@ def _verifica_date(session: Session, nume: str, email: str | None, exclude_id: i
     # mai putea deosebi pe hârtie.
     if exista_alta_valoare(session, Persoana.nume, nume, exclude_id):
         raise EroareValidare(f"Există deja o gestiune cu numele „{nume}”.")
-    if email and not _EMAIL.match(email):
+    if email and not adresa_valida(email):
         raise EroareValidare(f"Adresa de e-mail „{email}” nu este validă.")
 
 

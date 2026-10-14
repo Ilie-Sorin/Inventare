@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "_macros.html" import camp %}
+{% block titlu %}E-mailuri persoane{% endblock %}
+{% block continut %}
+<h1 class="h4">E-mailuri persoane / gestiuni — export și import Excel</h1>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-5">
+    <h2 class="h6">1. Exportă</h2>
+    <p class="small text-muted">Un rând pe gestiune, cu e-mailul curent. Completați sau corectați coloana
+      <strong>E-mail</strong>; coloanele gri (în special <strong>ID</strong>) nu se modifică.</p>
+    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('persoane.email_export') }}">Exportă gestiunile active</a>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('persoane.email_export', inactive=1) }}">Include și cele inactive</a>
+  </div>
+  {% if poate('OPERATOR') %}
+  <div class="col-lg-7">
+    <h2 class="h6">2. Încarcă fișierul completat</h2>
+    <p class="small text-muted">Se compară cu baza după ID și se arată ce se schimbă. <strong>Nimic nu se salvează
+      fără confirmare.</strong> Se modifică doar e-mailul; o celulă goală lasă adresa existentă neschimbată
+      (ștergerea se face din fișa persoanei).</p>
+    <form method="post" action="{{ url_for('persoane.email_previzualizare') }}" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+      {{ camp(form.fisier, accept=".xlsx") }}
+      {{ form.trimite(class="btn btn-primary") }}
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+{% if analiza %}
+<hr>
+<h2 class="h5">Previzualizare</h2>
+<p>
+  <span class="badge text-bg-success">{{ analiza.schimbari | length }} de actualizat</span>
+  <span class="badge text-bg-secondary">{{ analiza.neschimbate }} neschimbate</span>
+  <span class="badge text-bg-secondary">{{ analiza.goale }} goale (lăsate neschimbate)</span>
+  {% if analiza.erori %}<span class="badge text-bg-danger">{{ analiza.erori | length }} erori</span>{% endif %}
+</p>
+
+{% if analiza.erori %}
+<div class="alert alert-danger">
+  <strong>Aceste rânduri nu se aplică; corectați-le în fișier și încărcați din nou, dacă e cazul:</strong>
+  <ul class="mb-0">{% for e in analiza.erori %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+{% if analiza.avertismente %}
+<div class="alert alert-warning">
+  <strong>Verificați:</strong>
+  <ul class="mb-0">{% for a in analiza.avertismente %}<li>{{ a }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if analiza.schimbari %}
+<table class="table table-sm align-middle">
+  <thead><tr><th>Rând</th><th>Gestiune</th><th>E-mail curent</th><th>E-mail nou</th></tr></thead>
+  <tbody>
+  {% for s in analiza.schimbari %}
+    <tr><td>{{ s.rand }}</td><td>{{ s.nume }}</td><td>{{ s.vechi or "—" }}</td><td>{{ s.nou }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<form method="post" action="{{ url_for('persoane.email_aplicare') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="schimbari" value="{{ schimbari }}">
+  <button type="submit" class="btn btn-success">Aplică {{ analiza.schimbari | length }} actualizări</button>
+  <a class="btn btn-link" href="{{ url_for('persoane.email_pagina') }}">Renunță</a>
+</form>
+{% else %}
+<p class="text-muted">Nu există nicio adresă de actualizat.</p>
+{% endif %}
+{% endif %}
+{% endblock %}

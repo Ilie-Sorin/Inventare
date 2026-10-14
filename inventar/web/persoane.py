@@ -1,10 +1,13 @@
 """Persoane / gestiuni și încadrările lor."""
+import json
 from datetime import date
 from decimal import Decimal
+from io import BytesIO
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
 from flask_login import login_required
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField, FileRequired
 from sqlalchemy import or_, select
 from wtforms import SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Optional
@@ -17,6 +20,7 @@ from inventar.domain.normalizare import cheie_nume
 from inventar.domain.schimbare_incadrare import destinatari_predare, schimba_incadrarea
 from inventar.domain.stoc import bunuri_la_persoana
 from inventar.extensions import db
+from inventar.importuri import email_persoane
 from inventar.models import Activitate, Document, Incadrare, LinieDocument, Locatie, Persoana
 from inventar.web import actor_curent, arata_eroare, este_htmx, rol_necesar
 from inventar.web.formulare import OBLIGATORIU, FormularIncadrare, optiuni, zero_ca_none
@@ -37,6 +41,12 @@ class FormularPersoana(FlaskForm):
     email = StringField("E-mail", validators=[Optional()])
     titular_id = SelectField("Titular (doar pentru gestiuni secundare)", coerce=int, default=0)
     trimite = SubmitField("Salvează")
+
+
+class FormularEmailuri(FlaskForm):
+    fisier = FileField("Fișierul Excel completat (.xlsx)",
+                       validators=[FileRequired("Alegeți un fișier."), FileAllowed(["xlsx"], "Doar fișiere .xlsx.")])
+    trimite = SubmitField("Încarcă și compară")
 
 
 class FormularPersoanaNoua(FormularPersoana, FormularIncadrare):
@@ -197,3 +207,49 @@ def corectare_incadrare(incadrare_id: int):
             flash("Încadrare corectată.", "success")
             return redirect(url_for(".fisa", persoana_id=incadrare.persoana_id))
     return render_template("persoane/incadrare.html", form=form, persoana=incadrare.persoana, incadrare=incadrare)
+
+
+@bp.route("/persoane/email")
+@login_required
+def email_pagina():
+    return render_template("persoane/email.html", form=FormularEmailuri(), analiza=None)
+
+
+@bp.route("/persoane/email/export.xlsx")
+@login_required
+def email_export():
+    continut = email_persoane.exporta(db.session, actor_curent(), include_inactive=request.args.get("inactive") == "1")
+    return send_file(BytesIO(continut), as_attachment=True, download_name=f"emailuri_{date.today():%Y-%m-%d}.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+@bp.route("/persoane/email/previzualizare", methods=["POST"])
+@rol_necesar("OPERATOR")
+def email_previzualizare():
+    form = FormularEmailuri()
+    if not form.validate_on_submit():
+        return render_template("persoane/email.html", form=form, analiza=None)
+    try:
+        analiza = email_persoane.analizeaza(db.session, actor_curent(), form.fisier.data.read())
+    except EroareValidare as e:
+        arata_eroare(e)
+        return render_template("persoane/email.html", form=form, analiza=None)
+    # Fișierul nu se păstrează: la confirmare se trimit doar schimbările de aplicat, care se reverifică.
+    schimbari = json.dumps({s.persoana_id: s.nou for s in analiza.schimbari})
+    return render_template("persoane/email.html", form=FormularEmailuri(), analiza=analiza, schimbari=schimbari)
+
+
+@bp.route("/persoane/email/aplicare", methods=["POST"])
+@rol_necesar("OPERATOR")
+def email_aplicare():
+    try:
+        schimbari = {int(k): str(v) for k, v in json.loads(request.form.get("schimbari", "{}")).items()}
+        n = email_persoane.aplica(db.session, actor_curent(), schimbari)
+    except (ValueError, AttributeError):
+        flash("Datele de confirmare nu sunt valide; încărcați din nou fișierul.", "danger")
+    except EroareValidare as e:
+        arata_eroare(e)
+    else:
+        flash(f"Adrese de e-mail actualizate: {n}.", "success")
+        return redirect(url_for(".lista"))
+    return redirect(url_for(".email_pagina"))
