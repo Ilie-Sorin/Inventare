@@ -26,13 +26,21 @@ Pentru instalare, pachetele Python se descarcă pe un alt calculator (§2.1).
 
 ### 2.1. Pachetele Python, pe un calculator cu internet
 
-Pe un calculator cu aceeași versiune de Python (3.12, 64 de biți, Windows):
+Pe un calculator cu aceeași versiune de Python ca pe server (de ex. 3.12 sau 3.13, 64 de biți, Windows):
 
 ```powershell
 pip download -r requirements.txt -d wheels
 ```
 
+Dacă descărcarea se face cu altă versiune de Python decât cea de pe server, se precizează versiunea țintă:
+
+```powershell
+pip download -r requirements.txt -d wheels --only-binary=:all: --python-version 3.13 --platform win_amd64
+```
+
 Se copiază pe server directorul aplicației **și** directorul `wheels`.
+
+> **Nu se copiază `.venv\` pe server.** Mediul virtual conține căi absolute (utilizatorul și locul în care e instalat Python) și fișiere native compilate pentru o anumită versiune de Python; copiat pe altă mașină dă erori de tipul `ImportError: cannot import name 'imaging' from 'PIL'`. Se creează pe server, cu Python-ul de acolo (pasul 2.2). Versiunea Python din `wheels\` trebuie să fie aceeași cu cea de pe server (`python --version`).
 
 ### 2.2. Pe server
 
