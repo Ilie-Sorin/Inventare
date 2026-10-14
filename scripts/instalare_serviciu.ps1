@@ -90,8 +90,10 @@ if (Get-Service -Name $NumeServiciu -ErrorAction SilentlyContinue) {
 # În spatele proxy-ului, Waitress preia din antetele proxy-ului local IP-ul real (pentru jurnal), schema
 # (https) și numele public al gazdei. Fără gazda publică, protecția CSRF pe HTTPS ar refuza formularele
 # („The referrer does not match the host”), pentru că browserul și aplicația ar vedea gazde diferite.
+# Ghilimelele se scriu \" : PowerShell 5.1 pierde ghilimelele simple la transmiterea către nssm.exe,
+# iar valoarea cu spații ar fi spartă în mai multe argumente (Waitress ar afișa doar ajutorul).
 $parametri = "--listen=127.0.0.1:$Port --threads=$Fire --trusted-proxy=127.0.0.1 " +
-             "`"--trusted-proxy-headers=x-forwarded-for x-forwarded-proto x-forwarded-host`" " +
+             "\`"--trusted-proxy-headers=x-forwarded-for x-forwarded-proto x-forwarded-host\`" " +
              "--clear-untrusted-proxy-headers inventar.wsgi:app"
 $jurnale = Join-Path $Radacina "logs"
 if (-not $Simulare) { New-Item -ItemType Directory -Force $jurnale | Out-Null }
