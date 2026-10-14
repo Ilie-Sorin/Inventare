@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 import pytest
@@ -22,7 +22,7 @@ from inventar.domain.nomenclatoare import modifica_nomenclator
 from inventar.domain.persoane import modifica_persoana
 from inventar.domain.schimbare_incadrare import schimba_incadrarea
 from inventar.drepturi import AccesInterzis
-from inventar.models import Activitate, Comisie, Inventar, InventarLinie, Jurnal, Locatie
+from inventar.models import Activitate, Comisie, Inventar, InventarLinie, Jurnal, Locatie, Persoana, TrimitereEmail
 from tests.conftest import ADMIN_CLI, OPERATOR
 
 START = date(2025, 1, 1)
@@ -294,3 +294,19 @@ def test_blocare_deblocare_stergere(session, lume):
     assert session.scalar(select(func.count()).select_from(InventarLinie)) == 0
     actiuni = list(session.scalars(select(Jurnal.actiune).where(Jurnal.actiune.like("INVENTAR_%")).order_by(Jurnal.id)))
     assert actiuni == ["INVENTAR_GENERAT", "INVENTAR_BLOCAT", "INVENTAR_DEBLOCAT", "INVENTAR_STERS"]
+
+
+def test_stergerea_inventarului_cu_trimiteri_de_email(session, lume):
+    """Trimiterile de e-mail referă inventarul prin cheie străină; ștergerea nu trebuie să cadă."""
+    titular = session.scalars(select(Persoana)).first()
+    inv = genereaza(session, OPERATOR, D, Perimetru())
+    session.add(TrimitereEmail(lot="l1", inventar_id=inv.id, titular_id=titular.id, adresa="m@exemplu.ro",
+                               stare="TRIMIS", creat_la=datetime(2025, 11, 28, 10, 0)))
+    session.commit()
+
+    sterge(session, OPERATOR, inv.id)
+
+    assert session.scalar(select(func.count()).select_from(Inventar)) == 0
+    assert session.scalar(select(func.count()).select_from(TrimitereEmail)) == 0
+    intrare = session.scalars(select(Jurnal).where(Jurnal.actiune == "INVENTAR_STERS")).one()
+    assert json.loads(intrare.detalii_json)["trimiteri_email"] == 1

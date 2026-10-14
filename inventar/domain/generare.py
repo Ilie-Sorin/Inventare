@@ -29,6 +29,7 @@ from inventar.models import (
     Locatie,
     Persoana,
     Sincronizare,
+    TrimitereEmail,
     grup_persoana,
 )
 
@@ -243,6 +244,10 @@ def sterge(session: Session, actor: Actor, inventar_id: int) -> None:
     if inventar.stare == "BLOCAT":
         raise EroareValidare("Inventarul este blocat (semnat); cereți deblocarea administratorului.")
     detalii = {"data": inventar.data, "perimetru": json.loads(inventar.perimetru_json), "linii": inventar.nr_linii}
+    # Trimiterile de e-mail trimit către inventar (cheie străină); fără ele ștergerea ar eșua. Urma lor
+    # rămâne în jurnal (EMAIL_TRIMIS etc.) și în numărul din această înregistrare.
+    trimiteri = session.execute(delete(TrimitereEmail).where(TrimitereEmail.inventar_id == inventar_id))
+    detalii["trimiteri_email"] = trimiteri.rowcount
     _goleste(session, inventar)
     session.delete(inventar)
     jurnal.scrie(session, actor, "INVENTAR_STERS", "inventar", inventar_id, detalii)
