@@ -28,10 +28,10 @@ def create_app(test_config: dict | None = None) -> Flask:
     def incarca_utilizator(user_id: str):
         return db.session.get(models.Utilizator, int(user_id))
 
-    from inventar.web import (admin, auth, bunuri, comisii, documente, email, importuri, inventare,
+    from inventar.web import (admin, ajutor, auth, bunuri, comisii, documente, email, importuri, inventare,
                               nomenclatoare, persoane, principal, sincronizari)
 
-    for modul in (admin, auth, bunuri, comisii, documente, email, importuri, inventare, nomenclatoare, persoane,
+    for modul in (admin, ajutor, auth, bunuri, comisii, documente, email, importuri, inventare, nomenclatoare, persoane,
                   principal, sincronizari):
         app.register_blueprint(modul.bp)
 

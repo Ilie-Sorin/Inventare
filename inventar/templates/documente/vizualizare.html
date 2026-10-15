@@ -14,8 +14,11 @@
     <div class="small text-danger">Anulat la {{ document.anulat_la.strftime("%d.%m.%Y %H:%M") }}: {{ document.motiv_anulare }}</div>
     {% endif %}
   </div>
-  {% if poate('OPERATOR') %}
   <div class="text-nowrap">
+    {% if document.stare == "VALIDAT" and document.tip in ("INTRARE", "TRANSFER", "IESIRE") %}
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('documente.pdf', document_id=document.id) }}" target="_blank">Tipărește PDF</a>
+    {% endif %}
+    {% if poate('OPERATOR') %}
     {% if document.stare == "CIORNA" %}
     <a class="btn btn-sm btn-outline-primary" href="{{ url_for('documente.formular', document_id=document.id) }}">Modifică</a>
     {{ buton_post(url_for('documente.validare', document_id=document.id), 'Validează', 'btn-primary') }}
@@ -23,8 +26,8 @@
     {% if document.stare != "ANULAT" and document.tip != "INITIAL" %}
     <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#anulare">Anulează</button>
     {% endif %}
+    {% endif %}
   </div>
-  {% endif %}
 </div>
 
 <form method="post" action="{{ url_for('documente.anulare', document_id=document.id) }}" id="anulare"

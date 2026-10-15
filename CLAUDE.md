@@ -455,6 +455,9 @@ Lucrează **o fază pe rând**. La finalul fiecărei faze: teste verzi, scurt re
   - **Ștergerea unui inventar** șterge și rândurile din `trimitere_email` (cheie străină către `inventar`); numărul lor se scrie în jurnal la `INVENTAR_STERS`.
   - `scripts/test_smtp.py`: diagnostic pentru e-mail (setările din aplicație, dialogul SMTP, `AUTH` mascat). „Trimis” în aplicație înseamnă doar că serverul a acceptat mesajul.
   - Livrare: `.venv` nu se copiază între mașini; `wheels\` trebuie să fie pentru versiunea de Python a serverului (`pip download ... --only-binary=:all: --python-version X --platform win_amd64`). În `instalare_serviciu.ps1`, ghilimelele din `AppParameters` se scriu `\"` (PowerShell 5.1 le pierde, iar NSSM ar sparge `--trusted-proxy-headers`).
+- După faza 9 (2026-10-15), cerute de utilizator:
+  - **Bon de mișcare (PDF)** pentru documentele VALIDAT de tip INTRARE / TRANSFER / IESIRE (`pdf/document_miscare.py`, `tiparire_document.py`, ruta `documente.pdf`, butonul „Tipărește PDF”): A4 portret, titlu generic fără cod de formular (decis de utilizator), semnături doar Predă / Primește, locația și activitatea de la data documentului; jurnal `PDF_DOCUMENT`. Ciornele și cele anulate nu se tipăresc.
+  - **Meniul „Ajutor”**: manualul de utilizare, pagină statică în aplicație (`web/ajutor.py`, `templates/ajutor/manual.html`), vizibilă tuturor utilizatorilor autentificați. Se actualizează manual când se schimbă fluxurile.
 - **Toate fazele sunt terminate.** Nu mai sunt decizii deschise. 287 de teste verzi.
 - Convenție stabilită: serviciile publice primesc `(session, actor, ...)`, verifică rolul, scriu în jurnal și fac ele `commit`; `jurnal.scrie` nu face commit.
 - Dezvoltarea rulează pe Python 3.13 (3.12 nu e instalat pe mașina de dezvoltare).

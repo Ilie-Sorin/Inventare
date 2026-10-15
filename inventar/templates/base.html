@@ -64,6 +64,7 @@
             </ul>
           </li>
           {% endif %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('ajutor.manual') }}">Ajutor</a></li>
         </ul>
         <a class="navbar-text me-3 text-white text-decoration-none" href="{{ url_for('auth.parola') }}"
            title="Schimbă parola">{{ current_user.username }} ({{ current_user.rol }})</a>

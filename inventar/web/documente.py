@@ -1,13 +1,15 @@
 """Documentele de mișcare: listă, ciornă, validare, anulare."""
 from datetime import date
+from io import BytesIO
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, send_file, url_for
 from flask_login import login_required
 from flask_wtf import FlaskForm
 from sqlalchemy import func, or_, select
 from wtforms import DateField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Optional
 
+from inventar import tiparire_document
 from inventar.domain import documente
 from inventar.domain.comun import EroareValidare
 from inventar.domain.stoc import bunuri_la_persoana, nerepartizate
@@ -208,3 +210,14 @@ def anulare(document_id: int):
     else:
         flash("Document anulat.", "success")
     return redirect(url_for(".vizualizare", document_id=document_id))
+
+
+@bp.route("/documente/<int:document_id>/pdf")
+@login_required
+def pdf(document_id: int):
+    try:
+        nume, continut = tiparire_document.tipareste_document(db.session, actor_curent(), document_id)
+    except EroareValidare as e:
+        arata_eroare(e)
+        return redirect(url_for(".vizualizare", document_id=document_id))
+    return send_file(BytesIO(continut), mimetype="application/pdf", download_name=nume, as_attachment=False)

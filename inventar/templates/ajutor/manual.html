@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block titlu %}Manual de utilizare{% endblock %}
+{% block continut %}
+<div class="row">
+  <nav class="col-lg-3 mb-4">
+    <div class="list-group sticky-top" style="top: 1rem">
+      <a class="list-group-item list-group-item-action" href="#principii">Cum funcționează aplicația</a>
+      <a class="list-group-item list-group-item-action" href="#persoane">Persoane, locații, activități</a>
+      <a class="list-group-item list-group-item-action" href="#documente">Documente de mișcare</a>
+      <a class="list-group-item list-group-item-action" href="#bon">Bonul de mișcare (PDF)</a>
+      <a class="list-group-item list-group-item-action" href="#inventare">Inventare și tipărire</a>
+      <a class="list-group-item list-group-item-action" href="#email">Trimiterea prin e-mail</a>
+      <a class="list-group-item list-group-item-action" href="#contabilitate">Sincronizarea cu contabilitatea</a>
+      <a class="list-group-item list-group-item-action" href="#roluri">Roluri și drepturi</a>
+      <a class="list-group-item list-group-item-action" href="#intrebari">Întrebări frecvente</a>
+    </div>
+  </nav>
+  <div class="col-lg-9">
+    <h1 class="h3 mb-3">Manual de utilizare</h1>
+
+    <h2 class="h5 mt-4" id="principii">Cum funcționează aplicația</h2>
+    <p>Evidența contabilă rămâne în sistemul contabil. Aplicația ține doar <strong>la cine</strong>, <strong>în ce locație</strong>
+      și <strong>în ce activitate</strong> se află fiecare bun și, la orice dată, generează listele de inventariere (formular 14-3-12),
+      declarațiile, centralizatoarele și exporturile.</p>
+    <ul>
+      <li>Datele bunului (denumire, cont, valoare, serie etc.) vin din exportul contabil și <strong>nu se modifică</strong> în aplicație.</li>
+      <li>Mișcarea bunurilor (intrare, transfer, ieșire) se face numai prin <strong>documente</strong>; un bun nu se mută „direct”.</li>
+      <li>Listele se tipăresc din <strong>inventarul generat</strong> (o fotografie a situației la data aleasă), nu din situația curentă.</li>
+    </ul>
+
+    <h2 class="h5 mt-4" id="persoane">Persoane, locații, activități</h2>
+    <ul>
+      <li>O înregistrare din <em>Persoane</em> este o <strong>gestiune</strong> = o listă. O persoană cu mai multe gestiuni are gestiuni
+        secundare, legate de persoana fizică prin câmpul <em>Titular</em>.</li>
+      <li>Locația și activitatea stau pe persoană, cu istoric. Schimbarea lor se face din <em>Documente → Schimbare încadrare</em>,
+        unde alegeți și ce se întâmplă cu bunurile persoanei.</li>
+      <li>La semnături și la e-mail apare titularul (sau gestiunea, dacă nu are titular).</li>
+      <li>Nimic folosit în documente nu se șterge; înregistrările se dezactivează.</li>
+    </ul>
+
+    <h2 class="h5 mt-4" id="documente">Documente de mișcare</h2>
+    <table class="table table-sm">
+      <thead><tr><th>Tip</th><th>Când se folosește</th></tr></thead>
+      <tbody>
+        <tr><td>Intrare (repartizare)</td><td>Un bun nou din contabilitate este dat în primire unei persoane. Data propusă este data documentului de intrare din contabilitate.</td></tr>
+        <tr><td>Transfer</td><td>Bunul trece de la o persoană la alta. Transferul în masă mută toate bunurile unei persoane.</td></tr>
+        <tr><td>Ieșire</td><td>Bunul iese din evidență: casare, vânzare, transfer la altă unitate sau minus la inventar. Motivul este obligatoriu.</td></tr>
+        <tr><td>Schimbare încadrare</td><td>Persoana trece în altă locație și / sau activitate de la o dată. Predările către alții devin transferuri.</td></tr>
+      </tbody>
+    </table>
+    <p>Un document trece prin stările <strong>Ciornă → Validat → (opțional) Anulat</strong>. Numai documentele validate
+      influențează situația bunurilor.</p>
+    <ol>
+      <li>Din <em>Documente</em> alegeți tipul, data și numărul (propus automat), persoana care predă și cea care primește.</li>
+      <li>Bifați bunurile. Sunt afișate doar cele care pot fi mutate la data aleasă.</li>
+      <li><em>Salvează ciorna</em> permite modificări ulterioare; <em>Salvează și validează</em> face documentul definitiv.</li>
+    </ol>
+    <p>La validare se verifică:</p>
+    <ul>
+      <li>data nu poate fi anterioară inventarului inițial;</li>
+      <li>bunul trebuie să se afle, la acea dată, la persoana care predă (la intrare, să nu fie la nimeni);</li>
+      <li><strong>ordinea cronologică</strong>: nu se validează o mișcare dacă bunul are deja o mișcare validată cu dată ulterioară;</li>
+      <li>un bun ieșit nu mai poate fi mutat.</li>
+    </ul>
+    <p><strong>Anularea</strong> cere un motiv și este permisă doar dacă bunurile nu au mișcări validate ulterioare.
+      Validarea sau anularea unui document cu dată anterioară unui inventar generat îl marchează <em>Neactualizat</em>:
+      trebuie regenerat înainte de tipărire.</p>
+
+    <h2 class="h5 mt-4" id="bon">Bonul de mișcare (PDF)</h2>
+    <p>Pentru documentele <strong>validate</strong> de tip intrare, transfer sau ieșire, pagina documentului are butonul
+      <em>Tipărește PDF</em>. Bonul conține:</p>
+    <ul>
+      <li>unitatea și unitatea superioară (din <em>Administrare → Setări</em>), numărul și data documentului;</li>
+      <li>gestiunea care predă și cea care primește, cu locația și activitatea de la data documentului;</li>
+      <li>tabelul bunurilor: număr curent, denumire (seria), număr de inventar (și cel vechi), cont, U/M, cantitate, valoare, cu total;</li>
+      <li>la ieșiri: motivul și datele casării, dacă există;</li>
+      <li>semnăturile <em>Predă</em> și <em>Primește</em> (titularii gestiunilor) și numărul paginii.</li>
+    </ul>
+    <p class="text-muted small">Documentele în ciornă sau anulate nu se tipăresc. Fiecare tipărire se înregistrează în jurnal.</p>
+
+    <h2 class="h5 mt-4" id="inventare">Inventare și tipărire</h2>
+    <ol>
+      <li><em>Inventare → Nou</em>: alegeți data și, opțional, perimetrul (locații, activități, gestiuni, categorii, conturi).
+        Aplicația avertizează dacă există bunuri nerepartizate sau dacă sincronizarea cu contabilitatea este mai veche decât data.</li>
+      <li>Din pagina inventarului, <em>Listări</em> permite tipărirea listelor 14-3-12, a declarațiilor de început și de sfârșit,
+        a centralizatoarelor și exportul în Excel / CSV, cu aceleași filtre.</li>
+      <li><strong>Neactualizat</strong> înseamnă că s-a schimbat ceva după generare: apăsați <em>Regenerează</em>.</li>
+      <li><strong>Blocat</strong> înseamnă inventar semnat; se poate debloca doar de administrator, cu motiv.</li>
+    </ol>
+
+    <h2 class="h5 mt-4" id="email">Trimiterea prin e-mail</h2>
+    <p>Din pagina inventarului, <em>E-mail</em> pregătește câte un mesaj pe titular, cu PDF-urile tuturor gestiunilor lui.
+      Verificați destinatarii în previzualizare și confirmați. Titularii fără adresă apar separat. Cei cu eroare se pot retrimite.
+      Adresele se pot completa din <em>Persoane → E-mailuri (Excel)</em>. „Trimis” înseamnă că serverul de e-mail a acceptat mesajul.</p>
+
+    <h2 class="h5 mt-4" id="contabilitate">Sincronizarea cu contabilitatea</h2>
+    <p>Din <em>Contabilitate → Sincronizare anuală</em> încărcați noul export MF_BAZA. Aplicația arată diferențele
+      (bunuri noi, casări, modificări, bunuri dispărute) și <strong>nu aplică nimic fără confirmare</strong>. Bunurile noi rămân
+      nerepartizate până la un document de intrare.</p>
+
+    <h2 class="h5 mt-4" id="roluri">Roluri și drepturi</h2>
+    <table class="table table-sm">
+      <thead><tr><th>Rol</th><th>Poate</th></tr></thead>
+      <tbody>
+        <tr><td>Consultare</td><td>Vizualizare, listare, tipărire PDF.</td></tr>
+        <tr><td>Operator</td><td>În plus: documente, inventare, e-mail, importuri și sincronizări.</td></tr>
+        <tr><td>Administrator</td><td>În plus: setări, șabloane, utilizatori, jurnal, deblocarea inventarelor.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 class="h5 mt-4" id="intrebari">Întrebări frecvente</h2>
+    <dl>
+      <dt>Nu pot valida un document: „există o mișcare ulterioară”.</dt>
+      <dd>Bunul a fost mutat la o dată mai mare. Folosiți o dată ulterioară sau anulați întâi mișcarea mai nouă.</dd>
+      <dt>Bunul nu apare în lista de alegere.</dt>
+      <dd>Nu se află la persoana aleasă la data documentului, a ieșit sau (la intrare) este deja repartizat. Verificați <em>Fișa bunului</em>.</dd>
+      <dt>Inventarul este „Neactualizat”, nu pot tipări.</dt>
+      <dd>Apăsați <em>Regenerează</em> în pagina inventarului; tipărirea folosește numai situația la zi.</dd>
+      <dt>Am greșit un document validat.</dt>
+      <dd>Anulați-l, cu motiv, și întocmiți altul corect.</dd>
+      <dt>Diacriticele din PDF arată ciudat.</dt>
+      <dd>Numele se tipăresc exact cum sunt în baza de date; corectați-le prin redenumirea persoanei.</dd>
+    </dl>
+  </div>
+</div>
+{% endblock %}
