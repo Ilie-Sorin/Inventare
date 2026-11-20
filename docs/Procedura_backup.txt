@@ -1,0 +1,77 @@
+PROCEDURA DE BACKUP - Aplicația liste de inventariere
+=====================================================
+
+1. BACKUP-UL AUTOMAT ZILNIC
+---------------------------
+
+Este creat la instalare de scripts\instalare_serviciu.ps1, ca sarcină programată
+în Task Scheduler: „Inventare - backup zilnic”. Rulează în fiecare zi la ora
+stabilită prin -OraBackup (implicit 02:00), sub contul SYSTEM, și pornește
+scripts\backup.py.
+
+La fiecare rulare, scriptul:
+
+  a) Copiază baza de date (instance\inventar.db) cu API-ul de backup al SQLite.
+     Copia este consistentă chiar dacă aplicația este pornită și se lucrează în
+     ea. Nu trebuie oprit serviciul.
+
+  b) Verifică integritatea copiei (PRAGMA integrity_check). Dacă verificarea nu
+     trece, backup-ul este declarat eșuat.
+
+  c) Copiază fișierele din instance\ fără de care o restaurare nu este completă:
+       - secret.key        cheia cu care este criptată parola SMTP
+                           (fără ea, parola trebuie reintrodusă);
+       - flask_secret.key  cheia sesiunilor;
+       - sigla.png, config.py.
+
+  d) Pune totul într-un director cu data și ora, de exemplu:
+       E:\Backup\Inventare\inventar_2026-11-20_020000\
+
+  e) Șterge backup-urile vechi și le păstrează pe ultimele 30
+     (numărul se schimbă cu -PastreazaBackup la instalare).
+
+Dacă ceva eșuează, scriptul se încheie cu un cod de ieșire nenul. În Task
+Scheduler, la sarcina respectivă, coloana „Last Run Result” nu mai arată 0x0.
+
+
+2. BACKUP MANUAL
+----------------
+
+Se recomandă înainte de o actualizare a aplicației, de o sincronizare anuală
+sau de un import. Dintr-un PowerShell:
+
+  cd D:\Inventare
+  .venv\Scripts\python scripts\backup.py --destinatie E:\Backup\Inventare
+
+
+3. RESTAURAREA
+--------------
+
+  nssm stop Inventare
+  (se mută deoparte instance\inventar.db, inventar.db-wal și inventar.db-shm;
+   nu se șterg)
+  copy E:\Backup\Inventare\inventar_2026-11-20_020000\* D:\Inventare\instance\
+  nssm start Inventare
+
+Fișierele -wal și -shm trebuie mutate deoparte: dacă rămân lângă baza
+restaurată, SQLite le-ar aplica peste ea. Copia din backup este un singur
+fișier, fără -wal și -shm.
+
+
+4. CE TREBUIE VERIFICAT PE SERVER
+---------------------------------
+
+  - Sarcina rulează: Task Scheduler -> „Inventare - backup zilnic”, fila
+    History sau coloana „Last Run Result” (0x0 = reușit). În directorul de
+    backup trebuie să apară câte un director nou pe zi.
+
+  - Destinația este pe alt disc decât aplicația. Dacă aplicația și backup-ul
+    sunt pe același disc, o defecțiune a discului le distruge pe amândouă.
+
+  - Copia în afara serverului NU este automată. Scriptul nu copiază nimic pe
+    alt calculator. Copiile de pe server nu protejează dacă se defectează
+    serverul sau dacă este atacat cu ransomware. Directorul de backup trebuie
+    copiat periodic în altă parte.
+
+  - Restaurarea se încearcă o dată, de probă, într-o copie a aplicației (nu
+    peste baza reală). Așa se știe sigur că backup-urile sunt bune.
